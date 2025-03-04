@@ -10,7 +10,12 @@ import (
 func Run() {
 	// TODO: Вынести конфигурационные данные в .env-файл
 
-	http.HandleFunc("/", transport.LibHandler)
+	// TODO: запустить внутренние сервисы
+	// muslib := new(services.MusicLibrary) // По-хорошему там абстракт билдер должен быть...
+
+	// Запуск сервера
+	http.HandleFunc("/library", transport.LibraryHandler)
+	http.HandleFunc("/songs", transport.SongsHandler)
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		panic(err)

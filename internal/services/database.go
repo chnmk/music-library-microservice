@@ -1,4 +1,4 @@
-package service
+package services
 
 /*
 TODO: Обогащенную информацию положить в БД postgres (структура БД должна
