@@ -14,7 +14,7 @@ func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 func SongsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		// Добавление новой песни в формате
+		// Добавление новой песни
 		songsPost(w, r)
 	case http.MethodGet:
 		// Получение текста песни с пагинацией по куплетам

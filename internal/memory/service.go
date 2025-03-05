@@ -3,13 +3,12 @@ package memory
 import "github.com/chnmk/music-library-microservice/internal/models"
 
 type musicLibrary struct {
-	// Дополнительные требования не указаны, пока пусть будет срез
-	// TODO: на самом деле менять и удалять можно будет только по ID, так что...
-	songs []models.SongData
+	songs map[string]models.SongData
 }
 
-func (l *musicLibrary) AddSong() {
+func (l *musicLibrary) AddSong(song models.SongData) error {
 	// TODO
+	return nil
 }
 
 func (l *musicLibrary) addSong() {
@@ -22,22 +21,26 @@ func (l *musicLibrary) addSong() {
 	*/
 }
 
-func (l *musicLibrary) GetSongs() {
+func (l *musicLibrary) GetSongs() (map[string]models.SongData, error) {
 	// TODO
+	return nil, nil
 }
 
-func (l *musicLibrary) GetLyrics() {
+func (l *musicLibrary) GetLyrics(id string) (string, error) {
 	// TODO
+	return "", nil
 }
 
-func (l *musicLibrary) ChangeSong() {
+func (l *musicLibrary) ChangeSong(id string, song models.SongData) error {
 	// TODO
+	return nil
 }
 
-func (l *musicLibrary) DeleteSong() {
+func (l *musicLibrary) DeleteSong(id string) error {
 	// TODO
+	return nil
 }
 
 func NewLibrary() models.MusicLibrary {
-	return &musicLibrary{}
+	return &musicLibrary{songs: make(map[string]models.SongData)}
 }
