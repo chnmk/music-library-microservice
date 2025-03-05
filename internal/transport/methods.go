@@ -3,13 +3,13 @@ package transport
 import (
 	"net/http"
 
-	"github.com/chnmk/music-library-microservice/internal/services"
+	"github.com/chnmk/music-library-microservice/internal/config"
 )
 
 func libraryGet(w http.ResponseWriter, r *http.Request) {
 	// TODO
 
-	services.MusLib.GetSongs()
+	config.MusLib.GetSongs()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder"))
@@ -36,7 +36,7 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 
-	services.MusLib.AddSong()
+	config.MusLib.AddSong()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder"))
@@ -45,7 +45,7 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 	// TODO
 
-	services.MusLib.GetLyrics()
+	config.MusLib.GetLyrics()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder"))
@@ -54,7 +54,7 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 func songsPut(w http.ResponseWriter, r *http.Request) {
 	// TODO
 
-	services.MusLib.ChangeSong()
+	config.MusLib.ChangeSong()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder"))
@@ -63,7 +63,7 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 func songsDelete(w http.ResponseWriter, r *http.Request) {
 	// TODO
 
-	services.MusLib.DeleteSong()
+	config.MusLib.DeleteSong()
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder"))
