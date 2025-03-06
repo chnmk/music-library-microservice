@@ -2,8 +2,7 @@ package transport
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,18 +25,18 @@ func StartServer(ctx context.Context) {
 		<-sigint
 
 		if err := server.Shutdown(ctx); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
+			// log.Printf("HTTP server Shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("HTTP server ListenAndServe: %v", err)
+		// log.Fatalf("HTTP server ListenAndServe: %v", err)
 	}
 
 	<-idleConnsClosed
 
-	fmt.Println("shutting down...")
+	slog.Info("shutting down...")
 }
 
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией.

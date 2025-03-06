@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/chnmk/music-library-microservice/internal/models"
@@ -16,20 +16,21 @@ var (
 
 func SetConfig() {
 	// Значения по умолчанию
-
 	SERVER_PORT = "3000"
 
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println(".env file not found")
+		slog.Info(".env file not found")
 	}
 
+	var value string
 	var ok bool
 
-	SERVER_PORT, ok = os.LookupEnv("SERVER_PORT")
+	value, ok = os.LookupEnv("SERVER_PORT")
 	if ok {
-		fmt.Println("var exists")
+		slog.Debug("var exists")
+		SERVER_PORT = value
 	} else {
-		fmt.Println("var doesn't exist")
+		slog.Debug("var doesn't exist")
 	}
 }

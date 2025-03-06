@@ -2,7 +2,8 @@ package app
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/database"
@@ -11,11 +12,17 @@ import (
 )
 
 func Run() {
-	// TODO: Покрыть код debug- и info-логами
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	slog.Info("initialization start...")
+
+	config.SetConfig()
 	config.MusLib = memory.NewLibrary()
 	config.Database = database.NewDatabase()
 
+	slog.Info("initialization complete, starting server...")
+
 	transport.StartServer(context.Background())
-	fmt.Println("shutdown successful")
+
+	slog.Info("shutdown complete")
 }
