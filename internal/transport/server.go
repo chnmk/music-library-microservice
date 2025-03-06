@@ -15,7 +15,7 @@ func StartServer(ctx context.Context) {
 	http.HandleFunc("/library", LibraryHandler)
 	http.HandleFunc("/songs", SongsHandler)
 
-	server := &http.Server{Addr: ":" + config.SERVER_PORT, Handler: nil}
+	server := &http.Server{Addr: ":" + config.ServerPort, Handler: nil}
 
 	idleConnsClosed := make(chan struct{})
 

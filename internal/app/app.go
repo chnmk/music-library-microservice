@@ -12,7 +12,7 @@ import (
 )
 
 func Run() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: &config.SlogLevel})))
 
 	slog.Info("initialization start...")
 
