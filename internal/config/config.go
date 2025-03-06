@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 
 	"github.com/chnmk/music-library-microservice/internal/models"
 	"github.com/joho/godotenv"
 )
 
 var (
-	MusLib    models.MusicLibrary
-	Database  models.Database
-	SlogLevel slog.LevelVar
+	MusLib   models.MusicLibrary
+	Database models.Database
+	EnvVars  map[string]string
 
-	ServerPort string
+	ServerPort         string
+	DBConnectionString string
 
 	RequestServer string
 	RequestPort   string
@@ -27,78 +27,83 @@ var (
 	PostgresPassword string
 	PostgresDB       string
 
-	LogLevel   string
+	LogLevel  string
+	SlogLevel slog.LevelVar
+
 	MaxEntries int
 )
 
+// TODO: почистить (MaxEntries, непонятно что с LogLevel, нужны ли части строки)
 func SetConfig() {
-	// Значения по умолчанию
-	ServerPort = "3000"
-	RequestServer = "localhost"
-	RequestPort = "3001"
-	DBProtocol = "postgres"
-	DBHost = "postgres"
-	DBPort = "5432"
-	PostgresUser = "user"
-	PostgresPassword = "12345"
-	PostgresDB = "orders"
-	LogLevel = "debug"
-	MaxEntries = 10000
+	EnvVars = make(map[string]string)
+	EnvVars["SERVER_PORT"] = "3000"
+	EnvVars["REQUEST_SERVER"] = "localhost"
+	EnvVars["REQUEST_PORT"] = "3001"
+	EnvVars["DB_PROTOCOL"] = "postgres"
+	EnvVars["DB_HOST"] = "postgres"
+	EnvVars["DB_PORT"] = "5432"
+	EnvVars["POSTGRES_USER"] = "user"
+	EnvVars["POSTGRES_PASSWORD"] = "12345"
+	EnvVars["POSTGRES_DB"] = "orders"
+	EnvVars["LOG_LEVEL"] = "debug"
+	EnvVars["MAX_ENTRIES"] = "10000"
 
 	err := godotenv.Load()
 	if err != nil {
 		slog.Info(".env file not found")
 	} else {
-		slog.Info("reading from .env file...")
-
 		value, ok := os.LookupEnv("LOG_LEVEL")
 		if ok {
-			if value == "info" || value == "Info" || value == "INFO" || value == "I" || value == "i" || value == "0" {
-				SlogLevel.Set(slog.LevelInfo)
-				slog.Info("logging level set to 'info' (0)")
-			}
-
-			if value == "debug" || value == "Debug" || value == "DEBUG" || value == "D" || value == "d" || value == "-4" {
-				SlogLevel.Set(slog.LevelDebug)
-				slog.Info("logging level set to 'debug' (-4)")
-			}
+			LogLevel = value
 		}
+	}
 
-		// TODO: Если значений станет слишком много, можно использовать мапу и получать данные в цикле.
-		ServerPort = getEnv("SERVER_PORT")
-		RequestServer = getEnv("REQUEST_SERVER")
-		RequestPort = getEnv("REQUEST_PORT")
-		DBProtocol = getEnv("DB_PROTOCOL")
-		DBHost = getEnv("DB_HOST")
-		DBPort = getEnv("DB_PORT")
-		PostgresUser = getEnv("POSTGRES_USER")
-		PostgresPassword = getEnv("POSTGRES_PASSWORD")
-		PostgresDB = getEnv("POSTGRES_DB")
+	if LogLevel == "debug" || LogLevel == "Debug" || LogLevel == "DEBUG" || LogLevel == "D" || LogLevel == "d" || LogLevel == "-4" {
+		SlogLevel.Set(slog.LevelDebug)
+		slog.Info("logging level set to 'debug' (-4)")
+	} else {
+		SlogLevel.Set(slog.LevelInfo)
+		slog.Info("logging level set to 'info' (0)")
+	}
 
-		MaxEntries, err = strconv.Atoi(getEnv("MAX_ENTRIES"))
-		if err != nil {
+	slog.Info("reading environment variables...")
+
+	for name, def := range EnvVars {
+		value, exists := os.LookupEnv(name)
+		if exists {
 			slog.Debug(
-				fmt.Sprintf("error converting env variable to int: %v", err),
-				"name", "MAX_ENTRIES",
+				"env variable found",
+				"name", name,
+				"value", value,
+			)
+			EnvVars[name] = value
+		} else {
+			slog.Debug(
+				"env variable not found, using default",
+				"name", name,
+				"value", def,
 			)
 		}
 	}
-}
 
-func getEnv(name string) string {
-	value, ok := os.LookupEnv(name)
-	if ok {
-		slog.Debug(
-			"env variable exists",
-			"name", name,
-			"value", value,
-		)
-	} else {
-		slog.Debug(
-			"env variable doesn't exists",
-			"name", name,
-		)
-	}
+	ServerPort = EnvVars["SERVER_PORT"]
+	RequestServer = EnvVars["REQUEST_SERVER"]
+	RequestPort = EnvVars["REQUEST_PORT"]
+	DBProtocol = EnvVars["DB_PROTOCOL"]
+	DBHost = EnvVars["DB_HOST"]
+	DBPort = EnvVars["DB_PORT"]
+	PostgresUser = EnvVars["POSTGRES_USER"]
+	PostgresPassword = EnvVars["POSTGRES_PASSWORD"]
+	PostgresDB = EnvVars["POSTGRES_DB"]
+	// MaxEntries = EnvVars["MAX_ENTRIES"]
 
-	return value
+	DBConnectionString = fmt.Sprintf("%s://%s:%s@%s:%s/%s",
+		EnvVars["DB_PROTOCOL"],
+		EnvVars["POSTGRES_USER"],
+		EnvVars["POSTGRES_PASSWORD"],
+		EnvVars["DB_HOST"],
+		EnvVars["DB_PORT"],
+		EnvVars["POSTGRES_DB"],
+	)
+
 }
