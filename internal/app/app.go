@@ -1,24 +1,21 @@
 package app
 
 import (
-	"net/http"
+	"context"
+	"fmt"
 
+	"github.com/chnmk/music-library-microservice/internal/config"
+	"github.com/chnmk/music-library-microservice/internal/database"
+	"github.com/chnmk/music-library-microservice/internal/memory"
 	"github.com/chnmk/music-library-microservice/internal/transport"
 )
 
-// Запуск сервера
 func Run() {
-	// TODO: Вынести конфигурационные данные в .env-файл
-
-	// Запуск сервера (TODO: можно вынести в internal/transport)
-	http.HandleFunc("/library", transport.LibraryHandler)
-	http.HandleFunc("/songs", transport.SongsHandler)
-	err := http.ListenAndServe(":3000", nil)
-	if err != nil {
-		panic(err)
-	}
-
 	// TODO: Покрыть код debug- и info-логами
 
-	// TODO: Shutdown
+	config.MusLib = memory.NewLibrary()
+	config.Database = database.NewDatabase()
+
+	transport.StartServer(context.Background())
+	fmt.Println("shutdown successful")
 }

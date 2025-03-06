@@ -1,5 +1,12 @@
 package models
 
+type Database interface {
+	// TODO
+	// Создать БД (миграции)
+	// Положить в БД
+	// Дополнительно: возможность восстанавливать из БД при запуске (.env)
+}
+
 type MusicLibrary interface {
 	// TODO
 	AddSong(song SongData) (err error)

@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chnmk/music-library-microservice/internal/memory"
 	"github.com/chnmk/music-library-microservice/internal/models"
 	"github.com/joho/godotenv"
 )
 
 var (
 	MusLib      models.MusicLibrary
+	Database    models.Database
 	SERVER_PORT string
 )
 
 func SetConfig() {
 	// Значения по умолчанию
-	MusLib = memory.NewLibrary()
+
 	SERVER_PORT = "3000"
 
 	err := godotenv.Load()
