@@ -1,0 +1,32 @@
+
+services: 
+  muslib:
+    build: .
+    command: go run cmd/main.go
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
+    networks:
+      - postgres-network
+    volumes:
+      - .:/muslib
+
+  postgres:
+    image: postgres:alpine
+    networks:
+      - postgres-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data 
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+networks:
+  postgres-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  
