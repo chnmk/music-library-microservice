@@ -32,11 +32,3 @@ func SongsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-
-func paginate() {
-	// TODO
-}
-
-func validate() {
-	// TODO
-}

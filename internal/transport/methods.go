@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
+
+/*
+	TODO: ошибки, коды, ответы, пагинация. Вынести повторяющиеся части кода.
+*/
 
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией
 func libraryGet(w http.ResponseWriter, r *http.Request) {
@@ -23,8 +28,10 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 	song := r.URL.Query().Get("song")
 	lyrics := r.URL.Query().Get("lyrics")
 
+	var result map[int]models.SongData
+
 	if group != "" || song != "" || lyrics != "" {
-		result := make(map[string]models.SongData)
+		result = make(map[int]models.SongData)
 
 		for k, v := range lib {
 			if group != "" && !strings.Contains(v.Group, group) {
@@ -43,9 +50,11 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// TODO: paginate map
+
 	// TODO
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: paginated result json"))
+	w.Write([]byte("placeholder: paginated result json WITH SONG ID"))
 }
 
 // Добавление новой песни
@@ -66,6 +75,12 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if song.Group == "" || song.Song == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("song data invalid"))
+		return
+	}
+
 	err = config.MusLib.AddSong(song)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -79,10 +94,17 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 
 // Получение текста песни с пагинацией по куплетам
 func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
+	id_string := r.URL.Query().Get("id")
+	if id_string == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
+		return
+	}
+
+	id, err := strconv.Atoi(id_string)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
@@ -95,22 +117,31 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 
 	_ = result
 
+	// TODO: paginate string
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder: paginated result json"))
 }
 
 func songsPut(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	if id == "" {
+	id_string := r.URL.Query().Get("id")
+	if id_string == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
+		return
+	}
+
+	id, err := strconv.Atoi(id_string)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
 	var song models.SongData
 	var buf bytes.Buffer
 
-	_, err := buf.ReadFrom(r.Body)
+	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
@@ -120,6 +151,12 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 	if err = json.Unmarshal(buf.Bytes(), &song); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
+		return
+	}
+
+	if song.Group == "" || song.Song == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("song data invalid"))
 		return
 	}
 
@@ -136,14 +173,21 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 
 func songsDelete(w http.ResponseWriter, r *http.Request) {
 	// TODO
-	id := r.URL.Query().Get("id")
-	if id == "" {
+	id_string := r.URL.Query().Get("id")
+	if id_string == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
 		return
 	}
 
-	err := config.MusLib.DeleteSong(id)
+	id, err := strconv.Atoi(id_string)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	err = config.MusLib.DeleteSong(id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
