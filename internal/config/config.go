@@ -53,6 +53,7 @@ func SetConfig() {
 	err := godotenv.Load()
 	if err != nil {
 		slog.Info(".env file not found")
+		LogLevel = "debug"
 	} else {
 		value, ok := os.LookupEnv("LOG_LEVEL")
 		if ok {

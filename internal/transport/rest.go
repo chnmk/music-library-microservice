@@ -51,25 +51,7 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: paginate map
-	var result []models.PaginatedSongData
-	var currentPage int
-
-	result = append(result, models.PaginatedSongData{CurrentPage: 1}) // Нумерация страниц будет начинаться с единицы
-
-	for k, v := range filtered {
-		if len(result[currentPage].Entries) > config.PageSize {
-			currentPage++
-			result[currentPage].CurrentPage = currentPage + 1
-		}
-
-		var valueWithID models.SongDataWithID
-		valueWithID.ID = k
-		valueWithID.Group = v.Group
-		valueWithID.Song = v.Song
-		valueWithID.Lyrics = v.Lyrics
-		result[currentPage].Entries = append(result[currentPage].Entries, valueWithID)
-	}
+	result := paginateLibrary(filtered)
 
 	if page != "" {
 		pageInt, err := strconv.Atoi(page)
