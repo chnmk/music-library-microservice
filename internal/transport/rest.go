@@ -27,11 +27,12 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 	group := r.URL.Query().Get("group")
 	song := r.URL.Query().Get("song")
 	lyrics := r.URL.Query().Get("lyrics")
+	page := r.URL.Query().Get("page")
 
-	var result map[int]models.SongData
+	var filtered map[int]models.SongData
 
 	if group != "" || song != "" || lyrics != "" {
-		result = make(map[int]models.SongData)
+		filtered = make(map[int]models.SongData)
 
 		for k, v := range lib {
 			if group != "" && !strings.Contains(v.Group, group) {
@@ -46,13 +47,50 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
-			result[k] = v
+			filtered[k] = v
 		}
 	}
 
 	// TODO: paginate map
+	var result []models.PaginatedSongData
+	var currentPage int
 
-	// TODO
+	result = append(result, models.PaginatedSongData{CurrentPage: 1}) // Нумерация страниц будет начинаться с единицы
+
+	for k, v := range filtered {
+		if len(result[currentPage].Entries) > config.PageSize {
+			currentPage++
+			result[currentPage].CurrentPage = currentPage + 1
+		}
+
+		var valueWithID models.SongDataWithID
+		valueWithID.ID = k
+		valueWithID.Group = v.Group
+		valueWithID.Song = v.Song
+		valueWithID.Lyrics = v.Lyrics
+		result[currentPage].Entries = append(result[currentPage].Entries, valueWithID)
+	}
+
+	if page != "" {
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		if pageInt > len(result)+1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("page not found"))
+			return
+		}
+
+		// TODO: return result[page]
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("placeholder: result json"))
+	}
+
+	// TODO: return result
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("placeholder: paginated result json WITH SONG ID"))
 }

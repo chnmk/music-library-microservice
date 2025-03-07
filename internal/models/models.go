@@ -24,3 +24,15 @@ type SongData struct {
 	Song   string
 	Lyrics string
 }
+
+type SongDataWithID struct {
+	ID     int
+	Group  string
+	Song   string
+	Lyrics string
+}
+
+type PaginatedSongData struct {
+	CurrentPage int
+	Entries     []SongDataWithID
+}

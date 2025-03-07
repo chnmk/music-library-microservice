@@ -31,6 +31,7 @@ var (
 	SlogLevel slog.LevelVar
 
 	MaxEntries int
+	PageSize   int
 )
 
 // TODO: почистить (MaxEntries, непонятно что с LogLevel, нужны ли части строки)
@@ -47,6 +48,7 @@ func SetConfig() {
 	EnvVars["POSTGRES_DB"] = "orders"
 	EnvVars["LOG_LEVEL"] = "debug"
 	EnvVars["MAX_ENTRIES"] = "10000"
+	EnvVars["PAGE_SIZE"] = "10"
 
 	err := godotenv.Load()
 	if err != nil {
@@ -96,6 +98,7 @@ func SetConfig() {
 	PostgresPassword = EnvVars["POSTGRES_PASSWORD"]
 	PostgresDB = EnvVars["POSTGRES_DB"]
 	// MaxEntries = EnvVars["MAX_ENTRIES"]
+	PageSize = 10 // TODO
 
 	DBConnectionString = fmt.Sprintf("%s://%s:%s@%s:%s/%s",
 		EnvVars["DB_PROTOCOL"],
