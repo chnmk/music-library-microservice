@@ -7,7 +7,6 @@ import (
 type Database interface {
 	// TODO Дополнительно: возможность восстанавливать из БД при запуске (.env)
 	AddSong(ctx context.Context, id int, song SongData) error
-	DeleteMe(ctx context.Context)
 }
 
 type MusicLibrary interface {

@@ -19,7 +19,6 @@ func Run() {
 	config.SetConfig()
 	config.MusLib = services.NewLibrary()
 	config.Database = database.NewDatabase(context.Background())
-	config.Database.DeleteMe(context.Background()) // TODO: удалить
 
 	slog.Info("initialization complete, starting server...")
 

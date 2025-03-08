@@ -60,6 +60,7 @@ func NewDatabase(ctx context.Context) models.Database {
 }
 
 // TODO: delete me
+/*
 func (db postgresDB) DeleteMe(ctx context.Context) {
 	// Предварительная проверка
 	args := pgx.NamedArgs{
@@ -81,6 +82,7 @@ func (db postgresDB) DeleteMe(ctx context.Context) {
 		return
 	}
 }
+*/
 
 func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
 	args := pgx.NamedArgs{
