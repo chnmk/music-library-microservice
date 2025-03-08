@@ -11,6 +11,18 @@ import (
 )
 
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией.
+//
+//	@Summary		Get music library
+//	@Description	get paginated song data with optional flitration by group, song, lyrics or page
+//	@Produce		json
+//	@Param			group	query	string	false	"fliter by group"
+//	@Param			song	query	string	false	"fliter by song"
+//	@Param			lyrics	query	string	false	"fliter by lyrics"
+//	@Param			page	query	string	false	"fliter by page"
+//	@Success		200		{array}	models.PaginatedSongData
+//	@Failure		404
+//	@Failure		500
+//	@Router			/library [get]
 func libraryGet(w http.ResponseWriter, r *http.Request) {
 	params := make(map[string]string)
 
@@ -63,6 +75,15 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 }
 
 // Добавление новой песни.
+//
+//	@Summary		Add song
+//	@Description	add song to the server
+//	@Accept			json
+//	@Param			song	body	models.SongData	true	"artist and song title, lyrics are optional"
+//	@Success		200
+//	@Failure		400
+//	@Failure		500
+//	@Router			/songs [post]
 func songsPost(w http.ResponseWriter, r *http.Request) {
 	var song models.SongData
 	var buf bytes.Buffer
@@ -93,6 +114,15 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 }
 
 // Получение текста песни с пагинацией по куплетам.
+//
+//	@Summary		Get lyrics
+//	@Description	get paginated lyrics data for a song
+//	@Accept			json
+//	@Param			id	query	string	true	"id of a song"
+//	@Success		200	{array}	models.PaginatedLyrics
+//	@Failure		400
+//	@Failure		500
+//	@Router			/songs [get]
 func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
@@ -127,6 +157,16 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 }
 
 // Изменение данных песни.
+//
+//	@Summary		Edit song
+//	@Description	edit song data
+//	@Accept			json
+//	@Param			id		query	string			true	"id of a song"
+//	@Param			song	body	models.SongData	true	"artist and song title, lyrics are optional"
+//	@Success		200
+//	@Failure		400
+//	@Failure		500
+//	@Router			/songs [put]
 func songsPut(w http.ResponseWriter, r *http.Request) {
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
@@ -176,6 +216,15 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 }
 
 // Удаление песни.
+//
+//	@Summary		Delete song
+//	@Description	delete song data
+//	@Accept			json
+//	@Param			id	query	string	true	"id of a song"
+//	@Success		200
+//	@Failure		400
+//	@Failure		500
+//	@Router			/songs [delete]
 func songsDelete(w http.ResponseWriter, r *http.Request) {
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
