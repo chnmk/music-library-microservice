@@ -41,16 +41,17 @@ SERVER_PORT = 3000
 REQUEST_SERVER = localhost:3001
 REQUEST_TIMEOUT = 1
 
-# Переменные DB необходимо указать для запуска через Docker Compose
-DB_PROTOCOL=postgres
-DB_HOST=postgres
-DB_PORT=5432 
-
 # Строка подключения к БД формируется следующим образом:
 # DB_PROTOCOL://POSTGRES_USER:POSTGRES_PASSWORD@DB_HOST:DB_PORT/POSTGRES_DB
 POSTGRES_USER=user
 POSTGRES_PASSWORD=12345
-POSTGRES_DB=orders
+POSTGRES_DB=muslib
+
+# Для запуска через Docker Compose эти переменные необходимо указать в любом случае
+DB_PROTOCOL=postgres
+DB_HOST=postgres
+DB_PORT=5432 
+SSL_MODE=disable
 
 # Настройки самого сервиса
 LOG_LEVEL = debug # либо info

@@ -45,7 +45,7 @@ func NewDatabase(ctx context.Context) models.Database {
 	m, err := migrate.New(
 		"file://migrations",
 		// TODO: ssl
-		config.DBConnectionString+"?sslmode=disable")
+		config.DBConnectionString)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/chnmk/music-library-microservice/internal/transport"
 )
 
+// Запускает логгер, конфиг, базу данных, бизнес-логику и http-сервер.
 func Run() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: &config.SlogLevel})))
 
