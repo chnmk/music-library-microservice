@@ -48,7 +48,7 @@ func StartServer(ctx context.Context) {
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией.
 func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug(
-		"new request",
+		"new request incoming...",
 		"path", "/library",
 		"method", r.Method,
 	)
@@ -63,7 +63,7 @@ func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug(
-		"request successful",
+		"request finished",
 		"path", "/library",
 		"method", r.Method,
 	)
@@ -72,7 +72,7 @@ func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 // Добавление, получение текста, изменение, удаление конкретной песни.
 func SongsHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Debug(
-		"new request",
+		"new request incoming...",
 		"path", "/songs",
 		"method", r.Method,
 	)
@@ -98,7 +98,7 @@ func SongsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug(
-		"request successful",
+		"request finished",
 		"path", "/library",
 		"method", r.Method,
 	)
