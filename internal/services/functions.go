@@ -16,6 +16,7 @@ import (
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
 
+// Фильтрация данных по группе, названию песни или тексту.
 func filter(lib map[int]models.SongData, params map[string]string) (map[int]models.SongData, error) {
 	if len(params) > 0 {
 		filtered := make(map[int]models.SongData)
@@ -45,6 +46,7 @@ func filter(lib map[int]models.SongData, params map[string]string) (map[int]mode
 	return lib, nil
 }
 
+// Пагинация всех данных на сервере.
 func paginateLibrary(data map[int]models.SongData) []models.PaginatedSongData {
 	// Сортировка ключей в мапе
 	keys := make([]int, 0, len(data))
@@ -59,7 +61,7 @@ func paginateLibrary(data map[int]models.SongData) []models.PaginatedSongData {
 
 	result = append(result, models.PaginatedSongData{CurrentPage: currentPage + 1}) // Нумерация страниц будет начинаться с единицы
 
-	for k := range keys {
+	for _, k := range keys {
 		v := data[k]
 
 		if len(result[currentPage].Entries) == config.PageSize {
@@ -77,6 +79,7 @@ func paginateLibrary(data map[int]models.SongData) []models.PaginatedSongData {
 	return result
 }
 
+// Пагинация текста песни по куплетам.
 func paginateLyrics(lyrics string) []models.PaginatedLyrics {
 	var result []models.PaginatedLyrics
 
@@ -92,13 +95,8 @@ func paginateLyrics(lyrics string) []models.PaginatedLyrics {
 	return result
 }
 
+// Запрос текста со стороннего API.
 func requestLyrics(song models.SongData) (models.SongData, error) {
-	/*
-		При добавлении сделать запрос в АПИ, описанного сваггером. Апи,
-		описанный сваггером, будет поднят при проверке тестового задания.
-		Реализовывать его отдельно не нужно
-	*/
-
 	client := http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
 	url := config.RequestServer + "/info?group=" + song.Group + "&song=" + song.Song
 	url = strings.ReplaceAll(url, " ", "%20")
@@ -134,12 +132,16 @@ func requestLyrics(song models.SongData) (models.SongData, error) {
 	return song, nil
 }
 
+// Очистка данных из памяти при превышении MAX_ENTRIES. Оставляет 75% самых новых записей.
 func clearSongsData(songs map[int]models.SongData) map[int]models.SongData {
 	result := make(map[int]models.SongData)
 
-	slog.Info("max entires limit reached, clearing data...")
+	slog.Info(
+		"max entires limit reached, clearing data...",
+		"entries", len(songs),
+	)
 
-	// Сортировка ключей в мапе
+	// Сортировка ключей в мапе.
 	keys := make([]int, 0, len(songs))
 	for k := range songs {
 		keys = append(keys, k)
@@ -148,13 +150,16 @@ func clearSongsData(songs map[int]models.SongData) map[int]models.SongData {
 
 	// Оставляем 75% самых новых записей.
 	max := int(math.Floor(float64(len(keys)) * 0.25))
-	keys = keys[max:]
+	newKeys := keys[max:]
 
-	for k := range keys {
+	for _, k := range newKeys {
 		result[k] = songs[k]
 	}
 
-	slog.Info("data clear complete")
+	slog.Info(
+		"data clear complete",
+		"entries", len(result),
+	)
 
 	return result
 }

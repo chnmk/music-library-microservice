@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -26,34 +27,42 @@ import (
 func libraryGet(w http.ResponseWriter, r *http.Request) {
 	params := make(map[string]string)
 
+	// Получение параметров запроса.
 	params["group"] = r.URL.Query().Get("group")
 	params["song"] = r.URL.Query().Get("song")
 	params["lyrics"] = r.URL.Query().Get("lyrics")
 	params["page"] = r.URL.Query().Get("page")
 
+	// Получение всех песен.
 	lib, err := config.MusLib.GetSongs(params)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
+	// Получение конкретной страницы при необходимости.
 	if params["page"] != "" {
 		pageInt, err := strconv.Atoi(params["page"])
 		if err != nil {
+			slog.Debug("request failed", "err", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
 		if pageInt > len(lib)+1 {
+			slog.Debug("request failed", "err", "page not found")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("page not found"))
 			return
 		}
 
-		resp, err := json.Marshal(lib[pageInt])
+		// Запись ответа с конкретной страницей.
+		resp, err := json.Marshal([]models.PaginatedSongData{lib[pageInt]})
 		if err != nil {
+			slog.Debug("request failed", "err", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
@@ -63,8 +72,10 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 		w.Write(resp)
 	}
 
+	// Запись ответа.
 	resp, err := json.Marshal(lib)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -88,25 +99,30 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 	var song models.SongData
 	var buf bytes.Buffer
 
+	// Получение данных из тела запроса.
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &song); err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
 	if song.Group == "" || song.Song == "" {
+		slog.Debug("request failed", "err", "song data invalid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("song data invalid"))
 		return
 	}
 
+	// Добавление песни.
 	config.MusLib.AddSong(song)
 
 	w.WriteHeader(http.StatusOK)
@@ -124,8 +140,10 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500
 //	@Router			/songs [get]
 func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
+	// Получение параметра id.
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
+		slog.Debug("request failed", "err", "expected 'id' parameter")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
 		return
@@ -133,20 +151,25 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(id_string)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
+	// Получение пагинированного текста песни.
 	result, err := config.MusLib.GetLyrics(id)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
+	// Запись ответа.
 	resp, err := json.Marshal(result)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -168,8 +191,10 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500
 //	@Router			/songs [put]
 func songsPut(w http.ResponseWriter, r *http.Request) {
+	// Получение параметра id.
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
+		slog.Debug("request failed", "err", "expected 'id' parameter")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
 		return
@@ -177,6 +202,7 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(id_string)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -185,27 +211,33 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 	var song models.SongData
 	var buf bytes.Buffer
 
+	// Получение данных из тела запроса.
 	_, err = buf.ReadFrom(r.Body)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
 	if err = json.Unmarshal(buf.Bytes(), &song); err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
 	if song.Group == "" || song.Song == "" {
+		slog.Debug("request failed", "err", "song data invalid")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("song data invalid"))
 		return
 	}
 
+	// Редактирование песни.
 	err = config.MusLib.ChangeSong(id, song)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
@@ -226,8 +258,10 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500
 //	@Router			/songs [delete]
 func songsDelete(w http.ResponseWriter, r *http.Request) {
+	// Получение параметра id.
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
+		slog.Debug("request failed", "err", "expected 'id' parameter")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("expected 'id' parameter"))
 		return
@@ -235,13 +269,16 @@ func songsDelete(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(id_string)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
+	// Удаление песни.
 	err = config.MusLib.DeleteSong(id)
 	if err != nil {
+		slog.Debug("request failed", "err", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return

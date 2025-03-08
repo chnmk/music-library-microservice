@@ -111,6 +111,13 @@ paths:
             items:
               $ref: '#/definitions/models.PaginatedLyrics'
             type: array
+                  responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.PaginatedLyrics'
+            type: object
         "400":
           description: Bad Request
         "500":

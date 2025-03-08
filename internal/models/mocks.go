@@ -2,6 +2,7 @@ package models
 
 import "context"
 
+// Моковая база данных для использования в тестах.
 type MockDatabase struct {
 	Data map[int]SongData
 }

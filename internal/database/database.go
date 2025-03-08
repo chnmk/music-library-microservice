@@ -15,57 +15,31 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-/*
-TODO: Обогащенную информацию положить в БД postgres (структура БД должна
-быть создана путем миграций при старте сервиса)
-*/
-
+// Строка добавления песни в БД.
 const q_insert = `
 	INSERT INTO muslib(id, artist, song, lyrics)
 	VALUES (@id, @artist, @song, @lyrics)
 	RETURNING id
 `
 
+// Строка восстановления данных из БД.
 const q_restore = `
 	SELECT * FROM muslib
 	LIMIT @lim
 `
 
+// Имплементация интерфейса models.Database.
 type postgresDB struct {
 	Conn *pgxpool.Pool
 }
 
-func NewDatabase(ctx context.Context) models.Database {
-	slog.Debug(
-		"database setup",
-		"string", config.DBConnectionString,
+// Добавление песни в БД.
+func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
+	slog.Info(
+		"adding song to DB",
+		"id", id,
 	)
 
-	// Миграции
-	m, err := migrate.New(
-		"file://migrations",
-		// TODO: ssl
-		config.DBConnectionString)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := m.Up(); err != nil {
-		slog.Info(err.Error())
-	}
-
-	// Подключение к БД
-	conn, err := pgxpool.New(ctx, config.DBConnectionString)
-	if err != nil {
-		slog.Error(
-			"unable to connect to database",
-			"err", err.Error(),
-		)
-	}
-
-	return &postgresDB{Conn: conn}
-}
-
-func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
 	args := pgx.NamedArgs{
 		"id":     id,
 		"artist": song.Group,
@@ -75,16 +49,22 @@ func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) 
 
 	row := db.Conn.QueryRow(ctx, q_insert, args)
 
+	// Проверка результата.
 	var song_id int
-
 	err := row.Scan(&song_id)
 	if err != nil {
 		return err
 	}
 
+	slog.Info(
+		"song successfully added to DB",
+		"id", id,
+	)
+
 	return nil
 }
 
+// Восстановление данных из БД.
 func (db postgresDB) RestoreData(ctx context.Context) (int, map[int]models.SongData, error) {
 	var maxID int
 	result := make(map[int]models.SongData)
@@ -125,4 +105,34 @@ func (db postgresDB) RestoreData(ctx context.Context) (int, map[int]models.SongD
 	}
 
 	return maxID, result, nil
+}
+
+// Запускает миграции, устанавливает подключение, возвращает новую БД.
+func NewDatabase(ctx context.Context) models.Database {
+	slog.Debug(
+		"database setup",
+		"string", config.DBConnectionString,
+	)
+
+	// Миграции.
+	m, err := migrate.New(
+		"file://migrations",
+		config.DBConnectionString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := m.Up(); err != nil {
+		slog.Info(err.Error())
+	}
+
+	// Подключение к БД.
+	conn, err := pgxpool.New(ctx, config.DBConnectionString)
+	if err != nil {
+		slog.Error(
+			"unable to connect to database",
+			"err", err.Error(),
+		)
+	}
+
+	return &postgresDB{Conn: conn}
 }

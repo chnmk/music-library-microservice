@@ -164,7 +164,7 @@ func SetConfig() {
 		)
 		PageSize = 10
 	} else {
-		MaxEntries = val
+		PageSize = val
 	}
 
 	valBool, err := strconv.ParseBool(EnvVars["RESTORE_FROM_DB"])

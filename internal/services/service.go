@@ -10,13 +10,16 @@ import (
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
 
+// Имплементация интерфейса models.MusicLibrary.
 type musicLibrary struct {
 	mu    sync.Mutex
 	maxId int
 	songs map[int]models.SongData
 }
 
+// Добавляет песню в память.
 func (l *musicLibrary) AddSong(song models.SongData) {
+	// Запрашивает текст песни со стороннего API. Ошибки не являются критическими.
 	songWithLyrics, err := requestLyrics(song)
 	if err != nil {
 		slog.Info(
@@ -32,7 +35,7 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 		"id", id,
 	)
 
-	// Полагаю, песни стоит добавлять даже без текста
+	// Полагаю, песни стоит добавлять даже без текста.
 	l.mu.Lock()
 	l.songs[id] = songWithLyrics
 	l.maxId++
@@ -41,6 +44,7 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 	}
 	l.mu.Unlock()
 
+	// Полагаю, ошибки при добавлении в БД тоже не являются критическими.
 	err = config.Database.AddSong(context.Background(), id, songWithLyrics)
 	if err != nil {
 		slog.Info(
@@ -56,6 +60,7 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 	)
 }
 
+// Получение всех песен из памяти. С пагинацией и фильтрацией.
 func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSongData, error) {
 	l.mu.Lock()
 	if len(l.songs) == 0 {
@@ -71,6 +76,7 @@ func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSon
 	return paginateLibrary(filtered), nil
 }
 
+// Получение текста песни с пагинацией по куплетам.
 func (l *musicLibrary) GetLyrics(id int) ([]models.PaginatedLyrics, error) {
 	l.mu.Lock()
 	song, ok := l.songs[id]
@@ -85,6 +91,7 @@ func (l *musicLibrary) GetLyrics(id int) ([]models.PaginatedLyrics, error) {
 	return paginatedLyrics, nil
 }
 
+// Изменение данных песни.
 func (l *musicLibrary) ChangeSong(id int, song models.SongData) error {
 	l.mu.Lock()
 	_, ok := l.songs[id]
@@ -99,6 +106,7 @@ func (l *musicLibrary) ChangeSong(id int, song models.SongData) error {
 	return nil
 }
 
+// Удаление песни.
 func (l *musicLibrary) DeleteSong(id int) error {
 	l.mu.Lock()
 	_, ok := l.songs[id]
@@ -113,8 +121,10 @@ func (l *musicLibrary) DeleteSong(id int) error {
 	return nil
 }
 
+// Возвращает новую библиотеку музыки. Восстанавливает данные из БД при RESTORE_DATA=true.
 func NewLibrary() models.MusicLibrary {
 	if config.RestoreData {
+		slog.Info("restoring data from db...")
 		max, data, err := config.Database.RestoreData(context.Background())
 		if err != nil {
 			slog.Info(
@@ -122,7 +132,8 @@ func NewLibrary() models.MusicLibrary {
 				"err", err,
 			)
 		} else {
-			return &musicLibrary{maxId: max, songs: data}
+			slog.Info("data successfully restored")
+			return &musicLibrary{maxId: max + 1, songs: data}
 		}
 	}
 

@@ -17,12 +17,14 @@ type MusicLibrary interface {
 	DeleteSong(id int) (err error)
 }
 
+// Данные, которые приходят в запросах. Поле lyrics может быть пустым.
 type SongData struct {
-	Group  string
-	Song   string
-	Lyrics string
+	Group  string `json:"group"`
+	Song   string `json:"song"`
+	Lyrics string `json:"lyrics"`
 }
 
+// Структура данных, которые возвращаются клиенту при GET-запросе к /library.
 type SongDataWithID struct {
 	ID     int    `json:"id"`
 	Group  string `json:"group"`
@@ -30,17 +32,20 @@ type SongDataWithID struct {
 	Lyrics string `json:"lyrics"`
 }
 
+// Пагинированные данные, которые возвращаются клиенту при GET-запросе к /library.
 type PaginatedSongData struct {
 	CurrentPage int              `json:"currentPage"`
 	Entries     []SongDataWithID `json:"entries"`
 }
 
+// Данные, которые приходят со строннего API.
 type LyricsData struct {
 	ReleaseDate string `json:"releaseDate"`
 	Text        string `json:"text"`
 	Link        string `json:"link"`
 }
 
+// Данные, которые возвращаются клиенту при GET-запросе к /songs.
 type PaginatedLyrics struct {
 	LyricsPage int    `json:"lyricsPage"`
 	Text       string `json:"text"`

@@ -25,13 +25,19 @@ func StartServer(ctx context.Context) {
 		<-sigint
 
 		if err := server.Shutdown(ctx); err != nil {
-			// log.Printf("HTTP server Shutdown: %v", err)
+			slog.Info(
+				"HTTP server Shutdown",
+				"err", err,
+			)
 		}
 		close(idleConnsClosed)
 	}()
 
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		// log.Fatalf("HTTP server ListenAndServe: %v", err)
+		slog.Info(
+			"HTTP server ListenAndServe",
+			"err", err,
+		)
 	}
 
 	<-idleConnsClosed
@@ -41,17 +47,36 @@ func StartServer(ctx context.Context) {
 
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией.
 func LibraryHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug(
+		"new request",
+		"path", "/library",
+		"method", r.Method,
+	)
+
 	if r.Method == http.MethodGet {
 		libraryGet(w, r)
 	} else {
+		slog.Debug("request failed", "err", "expected GET")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("expected GET"))
 		return
 	}
+
+	slog.Debug(
+		"request successful",
+		"path", "/library",
+		"method", r.Method,
+	)
 }
 
 // Добавление, получение текста, изменение, удаление конкретной песни.
 func SongsHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug(
+		"new request",
+		"path", "/songs",
+		"method", r.Method,
+	)
+
 	switch r.Method {
 	case http.MethodPost:
 		// Добавление новой песни
@@ -66,8 +91,15 @@ func SongsHandler(w http.ResponseWriter, r *http.Request) {
 		// Удаление песни
 		songsDelete(w, r)
 	default:
+		slog.Debug("request failed", "err", "expected POST, GET, PUT or DELETE")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("expected POST, GET, PUT or DELETE"))
 		return
 	}
+
+	slog.Debug(
+		"request successful",
+		"path", "/library",
+		"method", r.Method,
+	)
 }
