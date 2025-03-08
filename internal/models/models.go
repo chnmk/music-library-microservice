@@ -1,6 +1,8 @@
 package models
 
-import "context"
+import (
+	"context"
+)
 
 type Database interface {
 	// TODO
@@ -13,7 +15,7 @@ type Database interface {
 type MusicLibrary interface {
 	// TODO
 	AddSong(song SongData) (err error)
-	GetSongs() (allSongs map[int]SongData, err error)
+	GetSongs(params map[string]string) (songs []PaginatedSongData, err error)
 	GetLyrics(id int) (lyrics string, err error)
 	ChangeSong(id int, song SongData) (err error)
 	DeleteSong(id int) (err error)

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
@@ -17,41 +16,20 @@ import (
 
 // Получение данных библиотеки с фильтрацией по всем полям и пагинацией
 func libraryGet(w http.ResponseWriter, r *http.Request) {
-	lib, err := config.MusLib.GetSongs()
+	params := make(map[string]string)
+
+	params["group"] = r.URL.Query().Get("group")
+	params["song"] = r.URL.Query().Get("song")
+	params["lyrics"] = r.URL.Query().Get("lyrics")
+
+	page := r.URL.Query().Get("page")
+
+	lib, err := config.MusLib.GetSongs(params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
 	}
-
-	group := r.URL.Query().Get("group")
-	song := r.URL.Query().Get("song")
-	lyrics := r.URL.Query().Get("lyrics")
-	page := r.URL.Query().Get("page")
-
-	var filtered map[int]models.SongData
-
-	if group != "" || song != "" || lyrics != "" {
-		filtered = make(map[int]models.SongData)
-
-		for k, v := range lib {
-			if group != "" && !strings.Contains(v.Group, group) {
-				break
-			}
-
-			if song != "" && !strings.Contains(v.Song, group) {
-				break
-			}
-
-			if lyrics != "" && !strings.Contains(v.Lyrics, group) {
-				break
-			}
-
-			filtered[k] = v
-		}
-	}
-
-	result := paginateLibrary(filtered)
 
 	if page != "" {
 		pageInt, err := strconv.Atoi(page)
@@ -61,7 +39,7 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if pageInt > len(result)+1 {
+		if pageInt > len(lib)+1 {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("page not found"))
 			return

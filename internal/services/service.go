@@ -1,4 +1,4 @@
-package memory
+package services
 
 import (
 	"errors"
@@ -39,14 +39,19 @@ func (l *musicLibrary) addSong(song models.SongData) (string, error) {
 	return song.Song + "placeholder", nil
 }
 
-func (l *musicLibrary) GetSongs() (map[int]models.SongData, error) {
+func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSongData, error) {
 	l.mu.Lock()
 	if len(l.songs) == 0 {
 		return nil, errors.New("no songs found")
 	}
 	l.mu.Unlock()
 
-	return l.songs, nil
+	filtered, err := filter(l.songs, params)
+	if err != nil {
+		return nil, errors.New("no songs found")
+	}
+
+	return paginateLibrary(filtered), nil
 }
 
 func (l *musicLibrary) GetLyrics(id int) (string, error) {

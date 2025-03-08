@@ -1,11 +1,42 @@
-package transport
+package services
 
 import (
+	"errors"
 	"sort"
+	"strings"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
+
+func filter(lib map[int]models.SongData, params map[string]string) (map[int]models.SongData, error) {
+	if len(params) > 0 {
+		filtered := make(map[int]models.SongData)
+
+		for k, v := range lib {
+			if _, ok := params["group"]; ok && !strings.Contains(v.Group, params["group"]) {
+				continue
+			}
+
+			if _, ok := params["song"]; ok && !strings.Contains(v.Song, params["song"]) {
+				continue
+			}
+
+			if _, ok := params["lyrics"]; ok && !strings.Contains(v.Lyrics, params["lyrics"]) {
+				continue
+			}
+
+			filtered[k] = v
+		}
+		if len(filtered) == 0 {
+			return nil, errors.New("no songs found")
+		}
+
+		return filtered, nil
+	}
+
+	return lib, nil
+}
 
 func paginateLibrary(data map[int]models.SongData) []models.PaginatedSongData {
 	// Сортировка ключей в мапе

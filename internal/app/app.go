@@ -7,7 +7,7 @@ import (
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/database"
-	"github.com/chnmk/music-library-microservice/internal/memory"
+	"github.com/chnmk/music-library-microservice/internal/services"
 	"github.com/chnmk/music-library-microservice/internal/transport"
 )
 
@@ -17,7 +17,7 @@ func Run() {
 	slog.Info("initialization start...")
 
 	config.SetConfig()
-	config.MusLib = memory.NewLibrary()
+	config.MusLib = services.NewLibrary()
 	config.Database = database.NewDatabase(context.Background())
 	config.Database.DeleteMe(context.Background()) // TODO: удалить
 
