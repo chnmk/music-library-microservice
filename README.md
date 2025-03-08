@@ -37,9 +37,9 @@ POSTGRES_DB=orders
 # Порт, на котором будет поднят сервер
 SERVER_PORT = 3000
 
-# Адрес и порт сервера, на который делается запрос для получения текстов песен
-REQUEST_SERVER = localhost
-REQUEST_PORT = 3001
+# Адрес сервера для получения текста песен и максимальное время запроса в секундах 
+REQUEST_SERVER = localhost:3001
+REQUEST_TIMEOUT = 1
 
 # Переменные DB необходимо указать для запуска через Docker Compose
 DB_PROTOCOL=postgres

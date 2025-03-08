@@ -181,3 +181,60 @@ func TestPaginateEmptyData(t *testing.T) {
 		t.Error("expected empty result")
 	}
 }
+
+func TestPaginateLyrics(t *testing.T) {
+	lyrics := "Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?\nYou caught me under false pretenses\nHow long before you let me go?\n\nOoh\nYou set my soul alight\nOoh\nYou set my soul alight"
+
+	paginated := paginateLyrics(lyrics)
+
+	if len(paginated) != 2 {
+		t.Fatalf("expected 2 pages, got %d", len(paginated))
+	}
+
+	if paginated[0].LyricsPage != 1 || paginated[1].LyricsPage != 2 {
+		t.Error("wrong page numeration")
+	}
+
+	if paginated[0].Text != "Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?\nYou caught me under false pretenses\nHow long before you let me go?" {
+		t.Error("wrong text for page 1")
+	}
+
+	if paginated[1].Text != "Ooh\nYou set my soul alight\nOoh\nYou set my soul alight" {
+		t.Error("wrong text for page 2")
+	}
+}
+
+func TestPaginateLyricsEmpty(t *testing.T) {
+	lyricsEmpty := ""
+
+	paginatedEmpty := paginateLyrics(lyricsEmpty)
+
+	if len(paginatedEmpty) != 1 {
+		t.Fatalf("expected 1 page, got %d", len(paginatedEmpty))
+	}
+
+	if paginatedEmpty[0].LyricsPage != 1 {
+		t.Error("wrong page numeration")
+	}
+
+	if paginatedEmpty[0].Text != "" {
+		t.Error("wrong text for page 1")
+	}
+
+	lyrics := "Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?"
+
+	paginated := paginateLyrics(lyrics)
+
+	if len(paginated) != 1 {
+		t.Fatalf("expected 1 page, got %d", len(paginated))
+	}
+
+	if paginated[0].LyricsPage != 1 {
+		t.Error("wrong page numeration")
+	}
+
+	if paginated[0].Text != "Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?" {
+		t.Error("wrong text for page 1")
+	}
+
+}

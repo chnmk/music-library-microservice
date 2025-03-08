@@ -10,29 +10,24 @@ import (
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
 
-/*
-	TODO: ошибки, коды, ответы, пагинация. Вынести повторяющиеся части кода.
-*/
-
-// Получение данных библиотеки с фильтрацией по всем полям и пагинацией
+// Получение данных библиотеки с фильтрацией по всем полям и пагинацией.
 func libraryGet(w http.ResponseWriter, r *http.Request) {
 	params := make(map[string]string)
 
 	params["group"] = r.URL.Query().Get("group")
 	params["song"] = r.URL.Query().Get("song")
 	params["lyrics"] = r.URL.Query().Get("lyrics")
-
-	page := r.URL.Query().Get("page")
+	params["page"] = r.URL.Query().Get("page")
 
 	lib, err := config.MusLib.GetSongs(params)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	if page != "" {
-		pageInt, err := strconv.Atoi(page)
+	if _, ok := params["page"]; ok {
+		pageInt, err := strconv.Atoi(params["page"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -40,22 +35,34 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if pageInt > len(lib)+1 {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("page not found"))
 			return
 		}
 
-		// TODO: return result[page]
+		resp, err := json.Marshal(lib[pageInt])
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("placeholder: result json"))
+		w.Write(resp)
 	}
 
-	// TODO: return result
+	resp, err := json.Marshal(lib)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: paginated result json WITH SONG ID"))
+	w.Write([]byte(resp))
 }
 
-// Добавление новой песни
+// Добавление новой песни.
 func songsPost(w http.ResponseWriter, r *http.Request) {
 	var song models.SongData
 	var buf bytes.Buffer
@@ -79,18 +86,13 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = config.MusLib.AddSong(song)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	config.MusLib.AddSong(song)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: success message"))
+	w.Write([]byte("success"))
 }
 
-// Получение текста песни с пагинацией по куплетам
+// Получение текста песни с пагинацией по куплетам.
 func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
@@ -113,14 +115,18 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = result
-
-	// TODO: paginate string
+	resp, err := json.Marshal(result)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: paginated result json"))
+	w.Write(resp)
 }
 
+// Изменение данных песни.
 func songsPut(w http.ResponseWriter, r *http.Request) {
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
@@ -166,11 +172,11 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: success message"))
+	w.Write([]byte("success"))
 }
 
+// Удаление песни.
 func songsDelete(w http.ResponseWriter, r *http.Request) {
-	// TODO
 	id_string := r.URL.Query().Get("id")
 	if id_string == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -193,5 +199,5 @@ func songsDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("placeholder: success message"))
+	w.Write([]byte("success"))
 }

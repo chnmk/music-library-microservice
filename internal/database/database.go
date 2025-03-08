@@ -59,6 +59,7 @@ func NewDatabase(ctx context.Context) models.Database {
 	return &postgresDB{Conn: conn}
 }
 
+// TODO: delete me
 func (db postgresDB) DeleteMe(ctx context.Context) {
 	// Предварительная проверка
 	args := pgx.NamedArgs{
@@ -79,4 +80,24 @@ func (db postgresDB) DeleteMe(ctx context.Context) {
 		)
 		return
 	}
+}
+
+func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
+	args := pgx.NamedArgs{
+		"id":     id,
+		"artist": song.Group,
+		"song":   song.Song,
+		"lyrics": song.Lyrics,
+	}
+
+	row := db.Conn.QueryRow(ctx, q_insert, args)
+
+	var song_id int
+
+	err := row.Scan(&song_id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

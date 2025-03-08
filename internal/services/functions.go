@@ -69,3 +69,18 @@ func paginateLibrary(data map[int]models.SongData) []models.PaginatedSongData {
 	}
 	return result
 }
+
+func paginateLyrics(lyrics string) []models.PaginatedLyrics {
+	var result []models.PaginatedLyrics
+
+	verses := strings.Split(lyrics, "\n\n")
+
+	for idx, v := range verses {
+		result = append(result, models.PaginatedLyrics{
+			LyricsPage: idx + 1,
+			Text:       v,
+		})
+	}
+
+	return result
+}

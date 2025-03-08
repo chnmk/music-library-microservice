@@ -5,18 +5,15 @@ import (
 )
 
 type Database interface {
-	// TODO
-	// Создать БД (миграции)
-	// Положить в БД
-	// Дополнительно: возможность восстанавливать из БД при запуске (.env)
+	// TODO Дополнительно: возможность восстанавливать из БД при запуске (.env)
+	AddSong(ctx context.Context, id int, song SongData) error
 	DeleteMe(ctx context.Context)
 }
 
 type MusicLibrary interface {
-	// TODO
-	AddSong(song SongData) (err error)
+	AddSong(song SongData)
 	GetSongs(params map[string]string) (songs []PaginatedSongData, err error)
-	GetLyrics(id int) (lyrics string, err error)
+	GetLyrics(id int) (lyrics []PaginatedLyrics, err error)
 	ChangeSong(id int, song SongData) (err error)
 	DeleteSong(id int) (err error)
 }
@@ -28,13 +25,24 @@ type SongData struct {
 }
 
 type SongDataWithID struct {
-	ID     int
-	Group  string
-	Song   string
-	Lyrics string
+	ID     int    `json:"id"`
+	Group  string `json:"group"`
+	Song   string `json:"song"`
+	Lyrics string `json:"lyrics"`
 }
 
 type PaginatedSongData struct {
-	CurrentPage int
-	Entries     []SongDataWithID
+	CurrentPage int              `json:"currentPage"`
+	Entries     []SongDataWithID `json:"entries"`
+}
+
+type LyricsData struct {
+	ReleaseDate string `json:"releaseDate"`
+	Text        string `json:"text"`
+	Link        string `json:"link"`
+}
+
+type PaginatedLyrics struct {
+	LyricsPage int    `json:"lyricsPage"`
+	Text       string `json:"text"`
 }

@@ -17,8 +17,8 @@ var (
 	ServerPort         string
 	DBConnectionString string
 
-	RequestServer string
-	RequestPort   string
+	RequestServer  string
+	RequestTimeout int
 
 	DBProtocol       string
 	DBHost           string
@@ -39,7 +39,7 @@ func SetConfig() {
 	EnvVars = make(map[string]string)
 	EnvVars["SERVER_PORT"] = "3000"
 	EnvVars["REQUEST_SERVER"] = "localhost"
-	EnvVars["REQUEST_PORT"] = "3001"
+	EnvVars["REQUEST_TIMEOUT"] = "1"
 	EnvVars["DB_PROTOCOL"] = "postgres"
 	EnvVars["DB_HOST"] = "postgres"
 	EnvVars["DB_PORT"] = "5432"
@@ -91,7 +91,7 @@ func SetConfig() {
 
 	ServerPort = EnvVars["SERVER_PORT"]
 	RequestServer = EnvVars["REQUEST_SERVER"]
-	RequestPort = EnvVars["REQUEST_PORT"]
+	// REQUEST_TIMEOUT
 	DBProtocol = EnvVars["DB_PROTOCOL"]
 	DBHost = EnvVars["DB_HOST"]
 	DBPort = EnvVars["DB_PORT"]
