@@ -1,12 +1,99 @@
 package services
 
 import (
+	"os"
 	"strconv"
 	"testing"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
 )
+
+func TestCRUDFunctions(t *testing.T) {
+	os.Setenv("REQUEST_SERVER", "http://localhost:3001")
+	config.SetConfig()
+	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
+	lib := NewLibrary()
+
+	var song models.SongData
+
+	song.Group = "Group 1"
+	song.Song = "Song 1"
+	song.Lyrics = "Verse 1\n\nVerse 2"
+
+	lib.AddSong(song)
+
+	// Получение всей библиотеки
+	everything, err := lib.GetSongs(make(map[string]string))
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if len(everything) == 0 {
+		t.Fatal("expected data")
+	}
+	if len(everything[0].Entries) == 0 {
+		t.Fatal("expected data")
+	}
+
+	id := everything[0].Entries[0].ID
+	if id != 0 {
+		t.Fatalf("expected id 0, got %d", id)
+	}
+
+	// Получение текста
+	lyr, err := lib.GetLyrics(id)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	if len(lyr) != 2 {
+		t.Fatalf("expected two verses, got: %v", len(lyr))
+	}
+
+	if lyr[0].Text != "Verse 1" {
+		t.Fatalf("expected Verse 1, got: %s", lyr[0].Text)
+	}
+
+	// Изменение песни
+	var song1 models.SongData
+
+	song1.Group = "Group 111"
+	song1.Song = "Song 111"
+	song1.Lyrics = "Verse 1 \n\n Verse 2"
+
+	err = lib.ChangeSong(id, song1)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	everything1, err := lib.GetSongs(make(map[string]string))
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if len(everything1) == 0 {
+		t.Fatal("expected data")
+	}
+	if len(everything1[0].Entries) == 0 {
+		t.Fatal("expected data")
+	}
+
+	gr := everything1[0].Entries[0].Group
+	if gr != "Group 111" {
+		t.Errorf("data change failed, expected Group 111, got %s", gr)
+	}
+
+	// Удаление песни
+	err = lib.DeleteSong(id)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	_, err = lib.GetSongs(make(map[string]string))
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+
+}
 
 func TestFilterDataByGroup(t *testing.T) {
 	data := make(map[int]models.SongData)

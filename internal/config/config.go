@@ -39,7 +39,7 @@ var (
 func SetConfig() {
 	EnvVars = make(map[string]string)
 	EnvVars["SERVER_PORT"] = "3000"
-	EnvVars["REQUEST_SERVER"] = "localhost"
+	EnvVars["REQUEST_SERVER"] = "http://localhost:3001"
 	EnvVars["REQUEST_TIMEOUT"] = "1"
 	EnvVars["DB_PROTOCOL"] = "postgres"
 	EnvVars["DB_HOST"] = "postgres"

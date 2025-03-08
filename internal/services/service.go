@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,6 +58,7 @@ func (l *musicLibrary) requestLyrics(song models.SongData) (models.SongData, err
 
 	client := http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
 	url := config.RequestServer + "/info?group=" + song.Group + "&song=" + song.Song
+	url = strings.ReplaceAll(url, " ", "%20")
 
 	slog.Debug(
 		"requesting lyrics",
