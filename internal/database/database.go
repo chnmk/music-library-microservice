@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"log"
 	"log/slog"
 
@@ -23,6 +24,11 @@ const q_insert = `
 	INSERT INTO muslib(id, artist, song, lyrics)
 	VALUES (@id, @artist, @song, @lyrics)
 	RETURNING id
+`
+
+const q_restore = `
+	SELECT * FROM muslib
+	LIMIT @lim
 `
 
 type postgresDB struct {
@@ -59,31 +65,6 @@ func NewDatabase(ctx context.Context) models.Database {
 	return &postgresDB{Conn: conn}
 }
 
-// TODO: delete me
-/*
-func (db postgresDB) DeleteMe(ctx context.Context) {
-	// Предварительная проверка
-	args := pgx.NamedArgs{
-		"id":     1,
-		"artist": "kiss",
-		"song":   "sample text",
-		"lyrics": "hello world",
-	}
-	row := db.Conn.QueryRow(ctx, q_insert, args)
-
-	var song_id int
-	err := row.Scan(&song_id)
-	if err != nil {
-		slog.Error(
-			"failed to insert data",
-			"err", err.Error,
-			"id", 1,
-		)
-		return
-	}
-}
-*/
-
 func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
 	args := pgx.NamedArgs{
 		"id":     id,
@@ -102,4 +83,46 @@ func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) 
 	}
 
 	return nil
+}
+
+func (db postgresDB) RestoreData(ctx context.Context) (int, map[int]models.SongData, error) {
+	var maxID int
+	result := make(map[int]models.SongData)
+
+	args := pgx.NamedArgs{
+		"lim": config.MaxEntries,
+	}
+
+	rows, err := db.Conn.Query(ctx, q_restore, args)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		var song models.SongData
+
+		err = rows.Scan(&id, &song.Group, &song.Song, &song.Lyrics)
+		if err != nil {
+			return 0, nil, err
+		}
+
+		result[id] = song
+		if id > maxID {
+
+			maxID = id
+		}
+	}
+
+	if rows.Err() != nil {
+		return 0, nil, err
+	}
+
+	if len(result) == 0 {
+		return 0, nil, errors.New("data not found")
+	}
+
+	return maxID, result, nil
 }

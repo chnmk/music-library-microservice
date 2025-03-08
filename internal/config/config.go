@@ -30,8 +30,9 @@ var (
 	LogLevel  string
 	SlogLevel slog.LevelVar
 
-	MaxEntries int
-	PageSize   int
+	MaxEntries  int
+	RestoreData bool
+	PageSize    int
 )
 
 // TODO: почистить (MaxEntries, непонятно что с LogLevel, нужны ли части строки)
@@ -48,6 +49,7 @@ func SetConfig() {
 	EnvVars["POSTGRES_DB"] = "orders"
 	EnvVars["LOG_LEVEL"] = "debug"
 	EnvVars["MAX_ENTRIES"] = "10000"
+	EnvVars["RESTORE_FROM_DB"] = "true"
 	EnvVars["PAGE_SIZE"] = "10"
 
 	err := godotenv.Load()
@@ -99,6 +101,7 @@ func SetConfig() {
 	PostgresPassword = EnvVars["POSTGRES_PASSWORD"]
 	PostgresDB = EnvVars["POSTGRES_DB"]
 	// MaxEntries = EnvVars["MAX_ENTRIES"]
+	// RESTORE_FROM_DB
 	PageSize = 10 // TODO
 
 	DBConnectionString = fmt.Sprintf("%s://%s:%s@%s:%s/%s",

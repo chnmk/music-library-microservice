@@ -147,5 +147,17 @@ func (l *musicLibrary) DeleteSong(id int) error {
 }
 
 func NewLibrary() models.MusicLibrary {
+	if config.RestoreData {
+		max, data, err := config.Database.RestoreData(context.Background())
+		if err != nil {
+			slog.Info(
+				"failed to restore data from DB",
+				"err", err,
+			)
+		} else {
+			return &musicLibrary{maxId: max, songs: data}
+		}
+	}
+
 	return &musicLibrary{songs: make(map[int]models.SongData)}
 }

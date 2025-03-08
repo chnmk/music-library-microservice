@@ -17,8 +17,8 @@ func Run() {
 	slog.Info("initialization start...")
 
 	config.SetConfig()
-	config.MusLib = services.NewLibrary()
 	config.Database = database.NewDatabase(context.Background())
+	config.MusLib = services.NewLibrary()
 
 	slog.Info("initialization complete, starting server...")
 
