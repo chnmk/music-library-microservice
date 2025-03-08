@@ -63,6 +63,7 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSongData, error) {
 	l.mu.Lock()
 	if len(l.songs) == 0 {
+		l.mu.Unlock()
 		return nil, errors.New("no songs found")
 	}
 	l.mu.Unlock()

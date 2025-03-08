@@ -11,6 +11,7 @@ import (
 
 func TestCRUDFunctions(t *testing.T) {
 	os.Setenv("REQUEST_SERVER", "http://localhost:3001")
+	os.Setenv("RESTORE_FROM_DB", "false")
 	config.SetConfig()
 	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
 	lib := NewLibrary()

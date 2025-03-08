@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -56,6 +57,7 @@ func TestRequestNoData(t *testing.T) {
 }
 
 func TestCRUDRequests(t *testing.T) {
+	os.Setenv("RESTORE_FROM_DB", "false")
 	config.SetConfig()
 	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
 	config.MusLib = services.NewLibrary()
