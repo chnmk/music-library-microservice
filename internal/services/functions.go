@@ -1,9 +1,16 @@
 package services
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log/slog"
+	"math"
+	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
@@ -81,6 +88,73 @@ func paginateLyrics(lyrics string) []models.PaginatedLyrics {
 			Text:       v,
 		})
 	}
+
+	return result
+}
+
+func requestLyrics(song models.SongData) (models.SongData, error) {
+	/*
+		При добавлении сделать запрос в АПИ, описанного сваггером. Апи,
+		описанный сваггером, будет поднят при проверке тестового задания.
+		Реализовывать его отдельно не нужно
+	*/
+
+	client := http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
+	url := config.RequestServer + "/info?group=" + song.Group + "&song=" + song.Song
+	url = strings.ReplaceAll(url, " ", "%20")
+
+	slog.Debug(
+		"requesting lyrics",
+		"url", url,
+	)
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return song, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return song, fmt.Errorf("status code: %d", resp.StatusCode)
+	}
+
+	var lyricsData models.LyricsData
+	var buf bytes.Buffer
+
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return song, err
+	}
+
+	if err = json.Unmarshal(buf.Bytes(), &lyricsData); err != nil {
+		return song, err
+	}
+
+	song.Lyrics = lyricsData.Text
+
+	return song, nil
+}
+
+func clearSongsData(songs map[int]models.SongData) map[int]models.SongData {
+	result := make(map[int]models.SongData)
+
+	slog.Info("max entires limit reached, clearing data...")
+
+	// Сортировка ключей в мапе
+	keys := make([]int, 0, len(songs))
+	for k := range songs {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	// Оставляем 75% самых новых записей.
+	max := int(math.Floor(float64(len(keys)) * 0.25))
+	keys = keys[max:]
+
+	for k := range keys {
+		result[k] = songs[k]
+	}
+
+	slog.Info("data clear complete")
 
 	return result
 }

@@ -325,3 +325,40 @@ func TestPaginateLyricsEmpty(t *testing.T) {
 	}
 
 }
+
+func TestClearData(t *testing.T) {
+	os.Setenv("MAX_ENTRIES", "3")
+	config.SetConfig()
+	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
+	lib := NewLibrary()
+
+	var song models.SongData
+
+	song.Group = "Group 1"
+	song.Song = "Song 1"
+	song.Lyrics = "Verse 1\n\nVerse 2"
+
+	lib.AddSong(song)
+
+	var song2 models.SongData
+
+	song2.Group = "Group 2"
+	song2.Song = "Song 2"
+	song2.Lyrics = "Verse 1\n\nVerse 2"
+
+	lib.AddSong(song2)
+	lib.AddSong(song2)
+	lib.AddSong(song2)
+
+	// Получение всей библиотеки
+	everything, err := lib.GetSongs(make(map[string]string))
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if len(everything[0].Entries) != 3 {
+		t.Errorf("data not cleared, current length: %d", len(everything[0].Entries))
+	}
+	if everything[0].Entries[0].Group == "Song 1" || everything[0].Entries[1].Group == "Song 1" || everything[0].Entries[2].Group == "Song 1" {
+		t.Errorf("deleted wrong entry")
+	}
+}

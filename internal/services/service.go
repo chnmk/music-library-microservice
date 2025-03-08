@@ -1,16 +1,10 @@
 package services
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
-	"net/http"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
@@ -23,7 +17,7 @@ type musicLibrary struct {
 }
 
 func (l *musicLibrary) AddSong(song models.SongData) {
-	songWithLyrics, err := l.requestLyrics(song)
+	songWithLyrics, err := requestLyrics(song)
 	if err != nil {
 		slog.Info(
 			"couldn't get lyrics",
@@ -33,10 +27,18 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 
 	id := l.maxId
 
+	slog.Debug(
+		"adding new song...",
+		"id", id,
+	)
+
 	// Полагаю, песни стоит добавлять даже без текста
 	l.mu.Lock()
 	l.songs[id] = songWithLyrics
 	l.maxId++
+	if len(l.songs) > config.MaxEntries {
+		l.songs = clearSongsData(l.songs)
+	}
 	l.mu.Unlock()
 
 	err = config.Database.AddSong(context.Background(), id, songWithLyrics)
@@ -47,48 +49,11 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 			"err", err.Error(),
 		)
 	}
-}
-
-func (l *musicLibrary) requestLyrics(song models.SongData) (models.SongData, error) {
-	/*
-		При добавлении сделать запрос в АПИ, описанного сваггером. Апи,
-		описанный сваггером, будет поднят при проверке тестового задания.
-		Реализовывать его отдельно не нужно
-	*/
-
-	client := http.Client{Timeout: time.Duration(config.RequestTimeout) * time.Second}
-	url := config.RequestServer + "/info?group=" + song.Group + "&song=" + song.Song
-	url = strings.ReplaceAll(url, " ", "%20")
 
 	slog.Debug(
-		"requesting lyrics",
-		"url", url,
+		"song successfully added",
+		"id", id,
 	)
-
-	resp, err := client.Get(url)
-	if err != nil {
-		return song, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return song, fmt.Errorf("status code: %d", resp.StatusCode)
-	}
-
-	var lyricsData models.LyricsData
-	var buf bytes.Buffer
-
-	_, err = buf.ReadFrom(resp.Body)
-	if err != nil {
-		return song, err
-	}
-
-	if err = json.Unmarshal(buf.Bytes(), &lyricsData); err != nil {
-		return song, err
-	}
-
-	song.Lyrics = lyricsData.Text
-
-	return song, nil
 }
 
 func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSongData, error) {
