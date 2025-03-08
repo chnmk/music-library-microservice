@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"sync"
@@ -45,7 +44,7 @@ func (l *musicLibrary) AddSong(song models.SongData) {
 	l.mu.Unlock()
 
 	// Полагаю, ошибки при добавлении в БД тоже не являются критическими.
-	err = config.Database.AddSong(context.Background(), id, songWithLyrics)
+	err = config.Database.AddSong(config.ExitCtx, id, songWithLyrics)
 	if err != nil {
 		slog.Info(
 			"couldn't add song to database",
@@ -125,7 +124,7 @@ func (l *musicLibrary) DeleteSong(id int) error {
 func NewLibrary() models.MusicLibrary {
 	if config.RestoreData {
 		slog.Info("restoring data from db...")
-		max, data, err := config.Database.RestoreData(context.Background())
+		max, data, err := config.Database.RestoreData(config.ExitCtx)
 		if err != nil {
 			slog.Info(
 				"failed to restore data from DB",

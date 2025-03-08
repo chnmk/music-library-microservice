@@ -1,10 +1,13 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/chnmk/music-library-microservice/internal/models"
 	"github.com/joho/godotenv"
@@ -15,6 +18,10 @@ var (
 	MusLib   models.MusicLibrary
 	Database models.Database
 	EnvVars  map[string]string
+
+	// Объекты для завершения работы.
+	Exit    context.CancelFunc
+	ExitCtx context.Context
 
 	// Порт сервера, строка подключения к БД, информация о API с текстами песен.
 	ServerPort         string
@@ -192,4 +199,7 @@ func SetConfig() {
 	if EnvVars["SSL_MODE"] == "disable" {
 		DBConnectionString = DBConnectionString + "?sslmode=disable"
 	}
+
+	// Создание контекста для завершения работы.
+	ExitCtx, Exit = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 }

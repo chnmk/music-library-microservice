@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"log/slog"
 	"os"
 
@@ -18,12 +17,12 @@ func Run() {
 	slog.Info("initialization start...")
 
 	config.SetConfig()
-	config.Database = database.NewDatabase(context.Background())
+	config.Database = database.NewDatabase(config.ExitCtx)
 	config.MusLib = services.NewLibrary()
 
 	slog.Info("initialization complete, starting server...")
 
-	transport.StartServer(context.Background())
+	transport.StartServer(config.ExitCtx)
 
 	slog.Info("shutdown complete")
 }

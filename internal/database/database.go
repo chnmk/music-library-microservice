@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
@@ -119,7 +118,11 @@ func NewDatabase(ctx context.Context) models.Database {
 		"file://migrations",
 		config.DBConnectionString)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error(
+			"fatal error",
+			"err", err,
+		)
+		config.Exit()
 	}
 	if err := m.Up(); err != nil {
 		slog.Info(err.Error())
@@ -132,6 +135,7 @@ func NewDatabase(ctx context.Context) models.Database {
 			"unable to connect to database",
 			"err", err.Error(),
 		)
+		config.Exit()
 	}
 
 	return &postgresDB{Conn: conn}
