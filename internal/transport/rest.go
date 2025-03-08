@@ -26,7 +26,7 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := params["page"]; ok {
+	if params["page"] != "" {
 		pageInt, err := strconv.Atoi(params["page"])
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

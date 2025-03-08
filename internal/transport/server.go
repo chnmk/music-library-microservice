@@ -43,6 +43,10 @@ func StartServer(ctx context.Context) {
 func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		libraryGet(w, r)
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("expected GET"))
+		return
 	}
 }
 
