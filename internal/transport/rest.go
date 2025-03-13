@@ -16,11 +16,13 @@ import (
 //	@Summary		Get music library
 //	@Description	get paginated song data with optional flitration by artist, song, lyrics or page
 //	@Produce		json
-//	@Param			artist	query	string	false	"fliter by artist"
-//	@Param			song	query	string	false	"fliter by song"
-//	@Param			lyrics	query	string	false	"fliter by lyrics"
-//	@Param			page	query	string	false	"fliter by page"
-//	@Success		200		{array}	models.PaginatedSongData
+//	@Param			artist		query	string	false	"fliter by artist"
+//	@Param			song		query	string	false	"fliter by song"
+//	@Param			lyrics		query	string	false	"fliter by lyrics"
+//	@Param			releasedate	query	string	false	"fliter by release date"
+//	@Param			link		query	string	false	"fliter by link"
+//	@Param			page		query	string	false	"fliter by page"
+//	@Success		200			{array}	models.PaginatedSongData
 //	@Failure		404
 //	@Failure		500
 //	@Router			/library [get]
@@ -33,7 +35,7 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 	params.Song = r.URL.Query().Get("song")
 	params.Lyrics = r.URL.Query().Get("lyrics")
 	params.ReleaseDate = r.URL.Query().Get("releasedate")
-	params.Link = r.URL.Query().Get("Link")
+	params.Link = r.URL.Query().Get("link")
 	page = r.URL.Query().Get("page")
 
 	// Получение всех песен.
@@ -93,7 +95,7 @@ func libraryGet(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Add song
 //	@Description	add song to the server
 //	@Accept			json
-//	@Param			song	body	models.SongData	true	"artist and song title, lyrics are optional"
+//	@Param			song	body	models.NewSongData	true	"artist name and song title"
 //	@Success		200
 //	@Failure		400
 //	@Failure		500
@@ -143,8 +145,9 @@ func songsPost(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Get lyrics
 //	@Description	get paginated lyrics data for a song
 //	@Accept			json
-//	@Param			id	query	string	true	"id of a song"
-//	@Success		200	{array}	models.PaginatedLyrics
+//	@Param			artist	query	string	true	"artist name"
+//	@Param			song	query	string	true	"song title"
+//	@Success		200		{array}	models.PaginatedLyrics
 //	@Failure		400
 //	@Failure		500
 //	@Router			/songs [get]
@@ -182,8 +185,9 @@ func songsGetLyrics(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Edit song
 //	@Description	edit song data
 //	@Accept			json
-//	@Param			id		query	string			true	"id of a song"
-//	@Param			song	body	models.SongData	true	"artist and song title, lyrics are optional"
+//	@Param			artist	query	string				true	"artist name"
+//	@Param			song	query	string				true	"song title"
+//	@Param			song	body	models.FullSongData	true	"new artist name, song title, lyrics, release date, link. All fields are optional"
 //	@Success		200
 //	@Failure		400
 //	@Failure		500
@@ -239,7 +243,8 @@ func songsPut(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Delete song
 //	@Description	delete song data
 //	@Accept			json
-//	@Param			id	query	string	true	"id of a song"
+//	@Param			artist	query	string	true	"artist name"
+//	@Param			song	query	string	true	"song title"
 //	@Success		200
 //	@Failure		400
 //	@Failure		500

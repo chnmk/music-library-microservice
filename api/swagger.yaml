@@ -1,39 +1,39 @@
 definitions:
+  models.FullSongData:
+    properties:
+      artist:
+        type: string
+      link:
+        type: string
+      lyrics:
+        type: string
+      releasedate:
+        type: string
+      song:
+        type: string
+    type: object
+  models.NewSongData:
+    properties:
+      artist:
+        type: string
+      song:
+        type: string
+    type: object
   models.PaginatedLyrics:
     properties:
-      lyricsPage:
+      page:
         type: integer
       text:
         type: string
     type: object
   models.PaginatedSongData:
     properties:
-      currentPage:
-        type: integer
       entries:
         items:
-          $ref: '#/definitions/models.SongDataWithID'
+          $ref: '#/definitions/models.FullSongData'
         type: array
-    type: object
-  models.SongData:
-    properties:
-      group:
-        type: string
-      lyrics:
-        type: string
-      song:
-        type: string
-    type: object
-  models.SongDataWithID:
-    properties:
-      group:
-        type: string
-      id:
+      page:
         type: integer
-      lyrics:
-        type: string
-      song:
-        type: string
     type: object
 info:
   contact: {}
@@ -42,12 +42,12 @@ info:
 paths:
   /library:
     get:
-      description: get paginated song data with optional flitration by group, song,
+      description: get paginated song data with optional flitration by artist, song,
         lyrics or page
       parameters:
-      - description: fliter by group
+      - description: fliter by artist
         in: query
-        name: group
+        name: artist
         type: string
       - description: fliter by song
         in: query
@@ -56,6 +56,14 @@ paths:
       - description: fliter by lyrics
         in: query
         name: lyrics
+        type: string
+      - description: fliter by release date
+        in: query
+        name: releasedate
+        type: string
+      - description: fliter by link
+        in: query
+        name: link
         type: string
       - description: fliter by page
         in: query
@@ -81,9 +89,14 @@ paths:
       - application/json
       description: delete song data
       parameters:
-      - description: id of a song
+      - description: artist name
         in: query
-        name: id
+        name: artist
+        required: true
+        type: string
+      - description: song title
+        in: query
+        name: song
         required: true
         type: string
       responses:
@@ -99,9 +112,14 @@ paths:
       - application/json
       description: get paginated lyrics data for a song
       parameters:
-      - description: id of a song
+      - description: artist name
         in: query
-        name: id
+        name: artist
+        required: true
+        type: string
+      - description: song title
+        in: query
+        name: song
         required: true
         type: string
       responses:
@@ -111,13 +129,6 @@ paths:
             items:
               $ref: '#/definitions/models.PaginatedLyrics'
             type: array
-                  responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.PaginatedLyrics'
-            type: object
         "400":
           description: Bad Request
         "500":
@@ -128,12 +139,12 @@ paths:
       - application/json
       description: add song to the server
       parameters:
-      - description: artist and song title, lyrics are optional
+      - description: artist name and song title
         in: body
         name: song
         required: true
         schema:
-          $ref: '#/definitions/models.SongData'
+          $ref: '#/definitions/models.NewSongData'
       responses:
         "200":
           description: OK
@@ -147,17 +158,22 @@ paths:
       - application/json
       description: edit song data
       parameters:
-      - description: id of a song
+      - description: artist name
         in: query
-        name: id
+        name: artist
         required: true
         type: string
-      - description: artist and song title, lyrics are optional
+      - description: song title
+        in: query
+        name: song
+        required: true
+        type: string
+      - description: new artist name, song title, lyrics, release date, link. All fields are optional
         in: body
         name: song
         required: true
         schema:
-          $ref: '#/definitions/models.SongData'
+          $ref: '#/definitions/models.FullSongData'
       responses:
         "200":
           description: OK
