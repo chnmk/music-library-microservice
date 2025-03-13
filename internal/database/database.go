@@ -14,17 +14,78 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Строка добавления песни в БД.
-const q_insert = `
-	INSERT INTO muslib(id, artist, song, lyrics)
-	VALUES (@id, @artist, @song, @lyrics)
+// Запрос для чтения данных.
+const q_select_data = `
+	SELECT a.name, s.title, s.lyrics, s.release_date, s.link FROM artists a
+	LEFT JOIN songs s
+	ON a.id = s.artist_id
+	WHERE a.name LIKE @name AND s.title LIKE @title AND s.lyrics LIKE @lyrics 
+	AND s.release_date LIKE @release_date AND s.link LIKE @link
+`
+
+// Запрос для чтения одной песни.
+const q_select_song = `
+	SELECT a.name, s.title, s.lyrics, s.release_date, s.link FROM artists a
+	LEFT JOIN songs s
+	ON a.id = s.artist_id
+	WHERE a.name = @name AND s.title = @title
+`
+
+// Запрос для получения ID исполнителя по имени.
+const q_select_artist_id = `
+	SELECT id FROM artists 
+	WHERE name = @name
+`
+
+// Запрос для проверки количества песен у исполнителя.
+const q_select_artist_song_count = `
+	SELECT COUNT(*) FROM songs 
+	WHERE artist_id = @artist_id
+`
+
+// Запрос для добавления исполнителя.
+const q_insert_artist = `
+	INSERT INTO artists(name)
+	VALUES (@name)
 	RETURNING id
 `
 
-// Строка восстановления данных из БД.
-const q_restore = `
-	SELECT * FROM muslib
-	LIMIT @lim
+// Запрос для добавления песни.
+const q_insert_song = `
+	INSERT INTO songs(artist_id, title, lyrics, release_date, link)
+	VALUES (@artist_id, @title, @lyrics, @release_date, @link)
+	RETURNING id
+`
+
+// Запрос для редактирования исполнителя.
+const q_update_artist = `
+	UPDATE artists
+	SET name = @name
+	WHERE name = @old_name
+	RETURNING id
+`
+
+// Запрос для редактирования песни.
+const q_update_song = `
+	UPDATE songs
+	SET title = @title , lyrics = @lyrics, release_date = @release_date, link = @link
+	WHERE title = @old_title
+	AND artist_id = @artist_id
+	RETURNING id
+`
+
+// Запрос для удаления исполнителя.
+const q_delete_artist = `
+	DELETE FROM artists
+	WHERE name = @name
+	RETURNING id
+`
+
+// Запрос для удаления песни.
+const q_delete_song = `
+	DELETE FROM songs
+	WHERE artist_id = @artist_id AND title = @title
+	RETURNING id
 `
 
 // Имплементация интерфейса models.Database.
@@ -33,77 +94,207 @@ type postgresDB struct {
 }
 
 // Добавление песни в БД.
-func (db postgresDB) AddSong(ctx context.Context, id int, song models.SongData) error {
-	slog.Info(
-		"adding song to DB",
-		"id", id,
-	)
+func (db postgresDB) Insert(ctx context.Context, song models.FullSongData) error {
+	// Проверка, что исполнителя нет.
+	args := pgx.NamedArgs{"name": song.Artist}
 
-	args := pgx.NamedArgs{
-		"id":     id,
-		"artist": song.Group,
-		"song":   song.Song,
-		"lyrics": song.Lyrics,
+	var artist_id int
+	err := db.Conn.QueryRow(ctx, q_select_artist_id, args).Scan(&artist_id)
+
+	if err != nil {
+		// Добавление исполнителя.
+		err = db.Conn.QueryRow(ctx, q_insert_artist, args).Scan(&artist_id)
+		if err != nil {
+			return err
+		}
 	}
 
-	row := db.Conn.QueryRow(ctx, q_insert, args)
+	// Добавление песни.
+	args = pgx.NamedArgs{
+		"artist_id":    artist_id,
+		"title":        song.Song,
+		"lyrics":       song.Lyrics,
+		"release_date": song.ReleaseDate,
+		"link":         song.Link,
+	}
 
-	// Проверка результата.
 	var song_id int
-	err := row.Scan(&song_id)
+	err = db.Conn.QueryRow(ctx, q_insert_song, args).Scan(&song_id)
 	if err != nil {
 		return err
 	}
 
-	slog.Info(
-		"song successfully added to DB",
-		"id", id,
-	)
+	return nil
+}
+
+// Получение песен.
+func (db postgresDB) SelectAll(ctx context.Context, params models.FullSongData) ([]models.PaginatedSongData, error) {
+	var result []models.PaginatedSongData
+
+	// Запрос данных из БД.
+	args := pgx.NamedArgs{
+		"name":         "%" + params.Artist + "%",
+		"title":        "%" + params.Song + "%",
+		"lyrics":       "%" + params.Lyrics + "%",
+		"release_date": "%" + params.ReleaseDate + "%",
+		"link":         "%" + params.Link + "%",
+	}
+
+	rows, err := db.Conn.Query(ctx, q_select_data, args)
+	if err != nil {
+		return result, err
+	}
+
+	// Чтение данных с пагинацией.
+	var currentPage int
+
+	noData := true
+	result = append(result, models.PaginatedSongData{Page: currentPage + 1}) // Нумерация страниц начинается с единицы
+
+	defer rows.Close()
+	for rows.Next() {
+		noData = false
+		var song models.FullSongData
+
+		err = rows.Scan(&song.Artist, &song.Song, &song.Lyrics, &song.ReleaseDate, &song.Link)
+		if err != nil {
+			return result, err
+		}
+
+		if len(result[currentPage].Entries) >= config.PageSize {
+			currentPage++
+			result = append(result, models.PaginatedSongData{Page: currentPage + 1})
+		}
+
+		result[currentPage].Entries = append(result[currentPage].Entries, song)
+	}
+
+	if rows.Err() != nil {
+		return result, rows.Err()
+	}
+
+	if noData {
+		return result, errors.New("data not found")
+	}
+
+	return result, nil
+}
+
+// Получение текста одной песни.
+func (db postgresDB) SelectLyrics(ctx context.Context, song models.NewSongData) (string, error) {
+	var result string
+
+	// Запрос данных из БД.
+	args := pgx.NamedArgs{
+		"name":  song.Artist,
+		"title": song.Song,
+	}
+
+	var new models.FullSongData
+	err := db.Conn.QueryRow(ctx, q_select_song, args).Scan(&new.Artist, &new.Song, &new.Lyrics, &new.ReleaseDate, &new.Link)
+	if err != nil {
+		return result, err
+	}
+
+	return new.Lyrics, nil
+}
+
+// Редактирование песни.
+func (db postgresDB) Update(ctx context.Context, song models.NewSongData, params models.FullSongData) error {
+	// Ищёт нужную песню.
+	args := pgx.NamedArgs{"name": song.Artist, "title": song.Song}
+
+	var new models.FullSongData
+	err := db.Conn.QueryRow(ctx, q_select_song, args).Scan(&new.Artist, &new.Song, &new.Lyrics, &new.ReleaseDate, &new.Link)
+	if err != nil {
+		return err
+	}
+
+	// Проверяет какие поля стоит изменить.
+	if params.Artist != "" {
+		new.Artist = params.Artist
+	}
+	if params.Song != "" {
+		new.Song = params.Song
+	}
+	if params.Lyrics != "" {
+		new.Lyrics = params.Lyrics
+	}
+	if params.ReleaseDate != "" {
+		new.ReleaseDate = params.ReleaseDate
+	}
+	if params.Link != "" {
+		new.Link = params.Link
+	}
+
+	// Редактирует исполнителя.
+	args = pgx.NamedArgs{
+		"old_name": song.Artist,
+		"name":     new.Artist,
+	}
+
+	var artist_id int
+	err = db.Conn.QueryRow(ctx, q_update_artist, args).Scan(&artist_id)
+	if err != nil {
+		return err
+	}
+
+	// Редактирует песню.
+	args = pgx.NamedArgs{
+		"artist_id":    artist_id,
+		"old_title":    song.Song,
+		"title":        new.Song,
+		"lyrics":       new.Lyrics,
+		"release_date": new.ReleaseDate,
+		"link":         new.Link,
+	}
+
+	var song_id int
+	err = db.Conn.QueryRow(ctx, q_update_song, args).Scan(&song_id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-// Восстановление данных из БД.
-func (db postgresDB) RestoreData(ctx context.Context) (int, map[int]models.SongData, error) {
-	var maxID int
-	result := make(map[int]models.SongData)
+// Удаление песни. Если у исполнителя не осталось песен, исполнитель тоже удаляется.
+func (db postgresDB) Delete(ctx context.Context, song models.NewSongData) error {
+	// Ищет нужного исполнителя.
+	args := pgx.NamedArgs{"name": song.Artist}
 
-	args := pgx.NamedArgs{
-		"lim": config.MaxEntries,
-	}
-
-	rows, err := db.Conn.Query(ctx, q_restore, args)
+	var artist_id int
+	err := db.Conn.QueryRow(ctx, q_select_artist_id, args).Scan(&artist_id)
 	if err != nil {
-		return 0, nil, err
+		return err
 	}
 
-	defer rows.Close()
+	// Удаляет песню.
+	args = pgx.NamedArgs{"artist_id": artist_id, "title": song.Song}
 
-	for rows.Next() {
-		var id int
-		var song models.SongData
-
-		err = rows.Scan(&id, &song.Group, &song.Song, &song.Lyrics)
-		if err != nil {
-			return 0, nil, err
-		}
-
-		result[id] = song
-		if id > maxID {
-
-			maxID = id
-		}
+	var song_id int
+	err = db.Conn.QueryRow(ctx, q_delete_song, args).Scan(&song_id)
+	if err != nil {
+		return err
 	}
 
-	if rows.Err() != nil {
-		return 0, nil, err
+	// Проверяет остались ли песни у исполнителя.
+	args = pgx.NamedArgs{"artist_id": artist_id}
+
+	var song_count int
+	err = db.Conn.QueryRow(ctx, q_select_artist_song_count, args).Scan(&song_count)
+	if err != nil {
+		return err
 	}
 
-	if len(result) == 0 {
-		return 0, nil, errors.New("data not found")
-	}
+	// Удаляет исполнителя.
+	args = pgx.NamedArgs{"name": song.Artist}
 
-	return maxID, result, nil
+	err = db.Conn.QueryRow(ctx, q_delete_artist, args).Scan(&artist_id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Запускает миграции, устанавливает подключение, возвращает новую БД.

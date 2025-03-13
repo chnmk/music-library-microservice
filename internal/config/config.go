@@ -45,9 +45,7 @@ var (
 	SlogLevel slog.LevelVar
 
 	// Настройки сервиса.
-	MaxEntries  int
-	RestoreData bool
-	PageSize    int
+	PageSize int
 )
 
 // Устанавливает глобальные значения на основе переменных окружения.
@@ -66,8 +64,6 @@ func SetConfig() {
 	EnvVars["DB_PORT"] = "5432"
 	EnvVars["SSL_MODE"] = "disable"
 	EnvVars["LOG_LEVEL"] = "debug"
-	EnvVars["MAX_ENTRIES"] = "10000"
-	EnvVars["RESTORE_FROM_DB"] = "true"
 	EnvVars["PAGE_SIZE"] = "10"
 
 	// Поиск .env файла.
@@ -150,18 +146,6 @@ func SetConfig() {
 		RequestTimeout = val
 	}
 
-	val, err = strconv.Atoi(EnvVars["MAX_ENTRIES"])
-	if err != nil {
-		slog.Debug(
-			"error converting env var to int, using default",
-			"name", "MAX_ENTRIES",
-			"value", EnvVars["MAX_ENTRIES"],
-		)
-		MaxEntries = 10000
-	} else {
-		MaxEntries = val
-	}
-
 	val, err = strconv.Atoi(EnvVars["PAGE_SIZE"])
 	if err != nil {
 		slog.Debug(
@@ -172,18 +156,6 @@ func SetConfig() {
 		PageSize = 10
 	} else {
 		PageSize = val
-	}
-
-	valBool, err := strconv.ParseBool(EnvVars["RESTORE_FROM_DB"])
-	if err != nil {
-		slog.Debug(
-			"error converting env var to bool, using default",
-			"name", "RESTORE_FROM_DB",
-			"value", EnvVars["RESTORE_FROM_DB"],
-		)
-		RestoreData = false
-	} else {
-		RestoreData = valBool
 	}
 
 	// Создание строки подключения к БД.

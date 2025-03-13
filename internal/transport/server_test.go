@@ -42,7 +42,7 @@ func TestInvalidSongsMethods(t *testing.T) {
 
 func TestRequestNoData(t *testing.T) {
 	config.SetConfig()
-	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
+	config.Database = &models.MockDatabase{}
 	config.MusLib = services.NewLibrary()
 
 	req := httptest.NewRequest("GET", "/library", nil)
@@ -59,12 +59,12 @@ func TestRequestNoData(t *testing.T) {
 func TestCRUDRequests(t *testing.T) {
 	os.Setenv("RESTORE_FROM_DB", "false")
 	config.SetConfig()
-	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
+	config.Database = &models.MockDatabase{}
 	config.MusLib = services.NewLibrary()
 
 	// Добавление песни
 	body := strings.NewReader(`{
-		"group": "Muse", 
+		"artist": "Muse",
 		"song": "Supermassive Black Hole"
 	}`)
 
@@ -95,12 +95,12 @@ func TestCRUDRequests(t *testing.T) {
 
 	// Изменение песен
 	body = strings.NewReader(`{
-		"group": "Muzlo", 
+		"artist": "Muzlo",
 		"song": "A Very Tiny Black Hole",
 		"lyrics": "Verse 1\n\nVerse2"
 	}`)
 
-	req = httptest.NewRequest("PUT", "/songs?id=0", body)
+	req = httptest.NewRequest("PUT", "/songs?artist=Muse&song=Supermassive%20Black%20Hole", body)
 	rec = httptest.NewRecorder()
 
 	handler = http.HandlerFunc(SongsHandler)
@@ -111,7 +111,7 @@ func TestCRUDRequests(t *testing.T) {
 	}
 
 	// Получение текста песен
-	req = httptest.NewRequest("GET", "/songs?id=0", body)
+	req = httptest.NewRequest("GET", "/songs?artist=Muzlo&song=A%20Very%20Tiny%20Black%20Hole", body)
 	rec = httptest.NewRecorder()
 
 	handler = http.HandlerFunc(SongsHandler)
@@ -121,12 +121,12 @@ func TestCRUDRequests(t *testing.T) {
 		t.Fatalf("expected status 200, got: %d, error: %s", rec.Code, rec.Body)
 	}
 
-	if !strings.Contains(rec.Body.String(), "[{\"lyricsPage\":1,\"text\":\"Verse 1\"},") {
+	if !strings.Contains(rec.Body.String(), "[{\"page\":1,\"text\":\"Verse 1\"},") {
 		t.Errorf("data not found, got %s", rec.Body.String())
 	}
 
 	// Удаление песен
-	req = httptest.NewRequest("DELETE", "/songs?id=0", body)
+	req = httptest.NewRequest("DELETE", "/songs?artist=Muzlo&song=A%20Very%20Tiny%20Black%20Hole", body)
 	rec = httptest.NewRecorder()
 
 	handler = http.HandlerFunc(SongsHandler)
@@ -150,7 +150,7 @@ func TestCRUDRequests(t *testing.T) {
 
 func TestAPIRequests(t *testing.T) {
 	config.SetConfig()
-	config.Database = models.MockDatabase{Data: make(map[int]models.SongData)}
+	config.Database = &models.MockDatabase{}
 	config.MusLib = services.NewLibrary()
 
 	http.HandleFunc("/info", func(w http.ResponseWriter, r *http.Request) {
@@ -184,7 +184,7 @@ func TestAPIRequests(t *testing.T) {
 
 	// Добавление песни
 	body := strings.NewReader(`{
-	"group": "Muse", 
+	"artist": "Muse",
 	"song": "Supermassive Black Hole"
 }`)
 

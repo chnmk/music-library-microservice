@@ -1,9 +1,7 @@
 package services
 
 import (
-	"errors"
 	"log/slog"
-	"sync"
 
 	"github.com/chnmk/music-library-microservice/internal/config"
 	"github.com/chnmk/music-library-microservice/internal/models"
@@ -11,131 +9,159 @@ import (
 
 // Имплементация интерфейса models.MusicLibrary.
 type musicLibrary struct {
-	mu    sync.Mutex
-	maxId int
-	songs map[int]models.SongData
 }
 
-// Добавляет песню в память.
-func (l *musicLibrary) AddSong(song models.SongData) {
+// Запрашивает текст песни со стороннего API, добавляет песню в БД.
+func (l musicLibrary) AddSong(song models.NewSongData) error {
+	slog.Debug(
+		"adding song...",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
+
 	// Запрашивает текст песни со стороннего API. Ошибки не являются критическими.
 	songWithLyrics, err := requestLyrics(song)
 	if err != nil {
-		slog.Info(
-			"couldn't get lyrics",
+		slog.Error(
+			"couldn't get lyrics for song",
+			"artist", song.Artist,
+			"title", song.Song,
 			"err", err.Error(),
 		)
 	}
 
-	id := l.maxId
-
-	slog.Debug(
-		"adding new song...",
-		"id", id,
-	)
-
-	// Полагаю, песни стоит добавлять даже без текста.
-	l.mu.Lock()
-	l.songs[id] = songWithLyrics
-	l.maxId++
-	if len(l.songs) > config.MaxEntries {
-		l.songs = clearSongsData(l.songs)
-	}
-	l.mu.Unlock()
-
-	// Полагаю, ошибки при добавлении в БД тоже не являются критическими.
-	err = config.Database.AddSong(config.ExitCtx, id, songWithLyrics)
+	// Добавляет песню в БД.
+	err = config.Database.Insert(config.ExitCtx, songWithLyrics)
 	if err != nil {
-		slog.Info(
-			"couldn't add song to database",
-			"id", id,
+		slog.Error(
+			"adding song: error",
+			"artist", song.Artist,
+			"title", song.Song,
 			"err", err.Error(),
 		)
+
+		return err
 	}
 
 	slog.Debug(
-		"song successfully added",
-		"id", id,
+		"adding song: success",
+		"artist", song.Artist,
+		"title", song.Song,
 	)
+
+	return nil
 }
 
-// Получение всех песен из памяти. С пагинацией и фильтрацией.
-func (l *musicLibrary) GetSongs(params map[string]string) ([]models.PaginatedSongData, error) {
-	l.mu.Lock()
-	if len(l.songs) == 0 {
-		l.mu.Unlock()
-		return nil, errors.New("no songs found")
-	}
-	l.mu.Unlock()
+// Получение всех песен из БД. С пагинацией и фильтрацией.
+func (l musicLibrary) GetSongs(params models.FullSongData) ([]models.PaginatedSongData, error) {
+	slog.Debug(
+		"getting songs...",
+	)
 
-	filtered, err := filter(l.songs, params)
+	data, err := config.Database.SelectAll(config.ExitCtx, params)
 	if err != nil {
-		return nil, errors.New("no songs found")
+		slog.Error(
+			"getting songs: error",
+			"err", err.Error(),
+		)
+
+		return nil, err
 	}
 
-	return paginateLibrary(filtered), nil
+	slog.Debug(
+		"getting songs: success",
+	)
+
+	return data, nil
 }
 
 // Получение текста песни с пагинацией по куплетам.
-func (l *musicLibrary) GetLyrics(id int) ([]models.PaginatedLyrics, error) {
-	l.mu.Lock()
-	song, ok := l.songs[id]
-	l.mu.Unlock()
+func (l musicLibrary) GetLyrics(song models.NewSongData) ([]models.PaginatedLyrics, error) {
+	slog.Debug(
+		"getting lyrics...",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
 
-	if !ok {
-		return nil, errors.New("song not found")
+	data, err := config.Database.SelectLyrics(config.ExitCtx, song)
+	if err != nil {
+		slog.Debug(
+			"getting lyrics: error",
+			"artist", song.Artist,
+			"title", song.Song,
+		)
+
+		return nil, err
 	}
 
-	paginatedLyrics := paginateLyrics(song.Lyrics)
+	paginatedLyrics := paginateLyrics(data)
+
+	slog.Debug(
+		"getting lyrics: success",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
 
 	return paginatedLyrics, nil
 }
 
 // Изменение данных песни.
-func (l *musicLibrary) ChangeSong(id int, song models.SongData) error {
-	l.mu.Lock()
-	_, ok := l.songs[id]
-	if !ok {
-		l.mu.Unlock()
-		return errors.New("song not found")
+func (l musicLibrary) ChangeSong(song models.NewSongData, params models.FullSongData) error {
+	slog.Debug(
+		"changing song...",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
+
+	err := config.Database.Update(config.ExitCtx, song, params)
+	if err != nil {
+		slog.Debug(
+			"changing song: error",
+			"artist", song.Artist,
+			"title", song.Song,
+		)
+
+		return err
 	}
 
-	l.songs[id] = song
-	l.mu.Unlock()
+	slog.Debug(
+		"changing song: success",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
 
 	return nil
 }
 
 // Удаление песни.
-func (l *musicLibrary) DeleteSong(id int) error {
-	l.mu.Lock()
-	_, ok := l.songs[id]
-	if !ok {
-		l.mu.Unlock()
-		return errors.New("song not found")
+func (l musicLibrary) DeleteSong(song models.NewSongData) error {
+	slog.Debug(
+		"deleting song...",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
+
+	err := config.Database.Delete(config.ExitCtx, song)
+	if err != nil {
+		slog.Debug(
+			"deleting song: error",
+			"artist", song.Artist,
+			"title", song.Song,
+		)
+
+		return err
 	}
 
-	delete(l.songs, id)
-	l.mu.Unlock()
+	slog.Debug(
+		"deleting song: success",
+		"artist", song.Artist,
+		"title", song.Song,
+	)
 
 	return nil
 }
 
-// Возвращает новую библиотеку музыки. Восстанавливает данные из БД при RESTORE_DATA=true.
+// Возвращает новую библиотеку музыки.
 func NewLibrary() models.MusicLibrary {
-	if config.RestoreData {
-		slog.Info("restoring data from db...")
-		max, data, err := config.Database.RestoreData(config.ExitCtx)
-		if err != nil {
-			slog.Info(
-				"failed to restore data from DB",
-				"err", err,
-			)
-		} else {
-			slog.Info("data successfully restored")
-			return &musicLibrary{maxId: max + 1, songs: data}
-		}
-	}
-
-	return &musicLibrary{songs: make(map[int]models.SongData)}
+	return &musicLibrary{}
 }

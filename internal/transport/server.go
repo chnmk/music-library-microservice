@@ -56,7 +56,7 @@ func LibraryHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		libraryGet(w, r)
 	} else {
-		slog.Debug("request failed", "err", "expected GET")
+		slog.Error("request denied", "err", "expected GET")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("expected GET"))
 		return
@@ -91,7 +91,7 @@ func SongsHandler(w http.ResponseWriter, r *http.Request) {
 		// Удаление песни
 		songsDelete(w, r)
 	default:
-		slog.Debug("request failed", "err", "expected POST, GET, PUT or DELETE")
+		slog.Error("request denied", "err", "expected POST, GET, PUT or DELETE")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("expected POST, GET, PUT or DELETE"))
 		return
@@ -99,7 +99,7 @@ func SongsHandler(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug(
 		"request finished",
-		"path", "/library",
+		"path", "/songs",
 		"method", r.Method,
 	)
 }

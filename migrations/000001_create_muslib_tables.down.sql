@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS artists;
+DROP TABLE IF EXISTS songs;

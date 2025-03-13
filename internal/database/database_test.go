@@ -8,19 +8,26 @@ import (
 )
 
 func TestDatabaseExample(t *testing.T) {
-	mydb := models.MockDatabase{Data: make(map[int]models.SongData)}
+	mydb := models.MockDatabase{Data: make([]models.FullSongData, 0)}
 
-	var song1 models.SongData
-	var song2 models.SongData
+	var song1 models.FullSongData
+	var song2 models.FullSongData
 
-	song1.Group = "group1"
-	song2.Group = "group2"
+	song1.Artist = "artist1"
+	song2.Artist = "artist2"
 
-	mydb.AddSong(context.Background(), 1, song1)
-	mydb.AddSong(context.Background(), 2, song2)
+	mydb.Insert(context.Background(), song1)
+	mydb.Insert(context.Background(), song2)
 
-	maxID, newData, _ := mydb.RestoreData(context.Background())
-	if maxID != 2 || newData[1].Group != "group1" || newData[2].Group != "group2" {
-		t.Fatalf("expected the same data")
+	var params models.FullSongData
+
+	params.Artist = "artist1"
+
+	newData, err := mydb.SelectAll(context.Background(), params)
+	if err != nil {
+		t.Fatal("expected no error")
+	}
+	if len(newData) != 1 {
+		t.Error("expected one entry")
 	}
 }
